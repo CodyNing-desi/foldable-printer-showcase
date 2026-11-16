@@ -1,0 +1,26 @@
+{
+ "F09_L82": {
+  "instances": 12,
+  "base_parts": 9,
+  "glb_kb": 307,
+  "joints": 14
+ },
+ "F07": {
+  "instances": 6,
+  "base_parts": 6,
+  "glb_kb": 270,
+  "joints": 5
+ },
+ "SCZ": {
+  "instances": 15,
+  "base_parts": 9,
+  "glb_kb": 256,
+  "joints": 21
+ },
+ "F08_OPTIONAL": {
+  "instances": 5,
+  "base_parts": 5,
+  "glb_kb": 84,
+  "joints": 4
+ }
+}
