@@ -1,9 +1,13 @@
 import { F12_SIM, F12_ENG } from '../data/analysis'
-import { useApp } from '../state'
+import { useState } from 'react'
+import { useApp, useInView } from '../state'
 import { F12Scene } from '../three/SchematicScenes'
+import type { ViewMode } from '../three/SchematicScenes'
 
 export function Ch5F12() {
   const { f12Extend, setF12Extend, f12Wobble, setF12Wobble, openEvidence } = useApp()
+  const [view, setView] = useState<ViewMode>('full')
+  const [sceneRef, inView] = useInView<HTMLDivElement>()
 
   return (
     <section className="chapter" id="ch5">
@@ -13,15 +17,19 @@ export function Ch5F12() {
         <p className="lede">F12 三级伸缩：收纳比 0.735、Y 挠度 0.0612 mm 全场最优、连续碰撞 PASS。打开<b>晃动示意</b>，看六周课程窗口里真正的问题。</p>
 
         <div className="scene">
-          <div className="scene-canvas">
+          <div className="scene-canvas" ref={sceneRef}>
             <span className="scene-badge">原理示意 · 按 screening_v3.json 参数重建（F12 无 CAD 零件，不制造）</span>
-            <F12Scene extend={f12Extend} wobbleOn={f12Wobble} />
+            <F12Scene extend={f12Extend} wobbleOn={f12Wobble} view={view} active={inView} />
             <div className="scene-caption">
               <div className="cap-t">{f12Wobble ? '导向晃动 0.203–0.229 mm（夸大 ×20 示意）' : '三级嵌套伸缩 · 外径 60 / 壁厚 3 / 重叠 52'}</div>
               <div className="cap-d">{f12Wobble ? '多级导向间隙累积 → 卡滞风险。设计径向间隙仅 0.015 mm，常规加工与打印难以稳定保证。' : '拖动滑块展开/收拢。几何上它完全可行——问题不在几何。'}</div>
             </div>
           </div>
           <div className="vbar">
+            <div className="seg">
+              <button className={view === 'full' ? 'on' : ''} onClick={() => setView('full')}>整体视角</button>
+              <button className={view === 'close' ? 'on danger' : ''} onClick={() => setView('close')}>导向间隙特写</button>
+            </div>
             <span className="meta">收拢</span>
             <input type="range" min={0} max={1} step={0.005} value={f12Extend} onChange={e => setF12Extend(Number(e.target.value))} aria-label="伸缩进度" />
             <span className="meta">展开</span>

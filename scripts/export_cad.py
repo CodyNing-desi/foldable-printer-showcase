@@ -41,7 +41,8 @@ def load_modules(cad_root: Path, cand: str):
 
 def quat_from_R(R: np.ndarray):
     q = trimesh.transformations.quaternion_from_matrix(np.vstack([np.hstack([R, np.zeros((3, 1))]), [0, 0, 0, 1]]))
-    return [float(x) for x in q]  # xyzw
+    # trimesh 返回 (w,x,y,z)；three.js Quaternion 需要 (x,y,z,w)
+    return [float(q[1]), float(q[2]), float(q[3]), float(q[0])]
 
 
 def main():

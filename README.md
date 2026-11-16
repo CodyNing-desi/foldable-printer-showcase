@@ -28,11 +28,14 @@ bun run preview      # 课堂演示 http://localhost:4173（纯本地，无需�
 bunx playwright install chromium   # 首次（npm 用户：npx playwright install chromium）
 bun run test:e2e                   # 35 项端到端断言（真实 WebGL，离线阻断外部请求）
 bun run test:visual                # 重叠审计 + 动画状态截图 + 交互录屏（docs/media/）
+bun run test:visual3d              # 3D 视觉验收：28 状态×2 分辨率，读绘图缓冲判定模型可见/完整/不裁切
 bun run test                       # e2e + 布局审计
 ```
 
 浏览器解析（`e2e/browser.mjs`，无个人绝对路径）：Playwright 自带浏览器 → `CHROME_PATH` 环境变量 → 本机 Playwright 缓存。
- headless 环境自动启用 SwiftShader 软件 WebGL。
+headless 环境自动启用 SwiftShader 软件 WebGL。
+
+3D 视觉验收（`e2e/visual3d.mjs`）以 `?pdb` 开启 preserveDrawingBuffer，直接回读 WebGL 绘图缓冲统计模型像素覆盖率/包围盒/贴边数，**不以 canvas 存在或 E2E 全绿代替视觉验收**；生产 URL 不带该参数、无额外开销。环境变量 `VP/VPH/OUTDIR/HIDE` 控制分辨率与输出。
 
 验收记录与旧版"卡片重叠"判定见 [`docs/ACCEPTANCE.md`](docs/ACCEPTANCE.md)；
 Before/After 截图见 `docs/screenshots/before|after/`。

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { MOTIONS, phaseAt, phaseIndex } from '../data/motion'
-import { useApp } from '../state'
+import { useApp, useCtrl, useInView } from '../state'
 import { MechanismViewer, webglAvailable } from '../three/MechanismViewer'
 import type { ViewerCtrl as VCtrl } from '../three/MechanismViewer'
 import { FramePlayer } from '../components/FramePlayer'
@@ -11,7 +11,9 @@ import { EV_BY_ID } from '../data/evidence'
 const STROKE_SECONDS = 5.76 // 与原 GIF 48帧×120ms 一致
 
 export function Ch7Motion() {
-  const { motionTab, setMotionTab, ctrl, setCtrl, openEvidence, reduced } = useApp()
+  const { motionTab, setMotionTab, openEvidence, reduced } = useApp()
+  const { ctrl, setCtrl } = useCtrl()
+  const [sceneRef, inView] = useInView<HTMLDivElement>()
   const [fallback, setFallback] = useState(!webglAvailable())
   const [treeOpen, setTreeOpen] = useState(false)
   const [instances, setInstances] = useState<string[]>([])
@@ -49,7 +51,7 @@ export function Ch7Motion() {
   const viewerCtrl: VCtrl = {
     t: ctrl.t, explode: ctrl.explode, xray: ctrl.xray, isolate: ctrl.isolate,
     selected: ctrl.selectedPart, traces: ctrl.traces, labels: ctrl.labels,
-    preset: ctrl.preset, presetToken: ctrl.presetToken,
+    preset: ctrl.preset, presetToken: ctrl.presetToken, frameToken: ctrl.frameToken,
   }
   const presets: { id: CamPreset; label: string }[] = [
     { id: 'iso', label: '等轴' }, { id: 'front', label: '正视' }, { id: 'side', label: '侧视' },
@@ -73,12 +75,12 @@ export function Ch7Motion() {
         </div>
 
         <div className="scene">
-          <div className="scene-canvas">
+          <div className="scene-canvas" ref={sceneRef}>
             <span className="scene-badge">{spec.title} · 缩比 1:2 · {fallback ? '原始帧回退' : '真实 CAD 三维装配'}</span>
             {fallback ? (
               <FramePlayer cand={motionTab} />
             ) : (
-              <MechanismViewer cand={motionTab} ctrl={viewerCtrl} onSelect={pid => setCtrl({ selectedPart: pid })} onFallback={() => setFallback(true)} className="viewer-fill" />
+              <MechanismViewer cand={motionTab} ctrl={viewerCtrl} onSelect={pid => setCtrl({ selectedPart: pid })} onFallback={() => setFallback(true)} className="viewer-fill" active={inView} />
             )}
             {!fallback && (
               <div className="scene-caption">
@@ -105,7 +107,7 @@ export function Ch7Motion() {
             <span className="meta mono" style={{ minWidth: 64 }}>{Math.round(ctrl.t * 100)}%</span>
             <div className="phasebar grow" style={{ flex: 2 }}>
               {spec.phases.map((p, i) => (
-                <button key={i} className={i === pIdx ? 'on' : ''} style={{ width: `${(p.to - p.from) * 100}%` }} onClick={() => setCtrl({ t: p.from + 0.001, playing: false })} title={p.detail}>
+                <button key={i} className={i === pIdx ? 'on' : ''} style={{ width: `${(p.to - p.from) * 100}%` }} onClick={() => setCtrl({ t: p.from + 0.001, playing: false, frameToken: ctrl.frameToken + 1 })} title={p.detail}>
                   {(p.to - p.from) >= 0.12 ? p.label : ''}
                 </button>
               ))}
@@ -120,6 +122,7 @@ export function Ch7Motion() {
               <span className="meta">爆炸</span>
               <input type="range" min={0} max={1} step={0.01} value={ctrl.explode} onChange={e => setCtrl({ explode: Number(e.target.value), playing: false })} aria-label="爆炸分解进度" />
             </span>
+            <button className="chip" onClick={() => setCtrl({ frameToken: ctrl.frameToken + 1 })}>重新取景</button>
             <button className={`chip ${ctrl.traces ? 'on' : ''}`} onClick={() => setCtrl({ traces: !ctrl.traces })}>运动轨迹</button>
             <button className={`chip ${ctrl.labels ? 'on' : ''}`} onClick={() => setCtrl({ labels: !ctrl.labels })}>关节标注</button>
             <button className={`chip ${ctrl.xray ? 'on' : ''}`} onClick={() => setCtrl({ xray: !ctrl.xray })}>X 光</button>

@@ -3,7 +3,7 @@ import { CANDIDATES } from '../data/candidates'
 import { STAGES, STAGE_BY_ID, stageStatus } from '../data/stages'
 import { STATUS_META } from '../data/types'
 import type { StageId } from '../data/types'
-import { useApp } from '../state'
+import { useApp, useInView } from '../state'
 import { MechanismViewer, webglAvailable } from '../three/MechanismViewer'
 import { FramePlayer } from '../components/FramePlayer'
 
@@ -28,6 +28,7 @@ export function Ch2Candidates() {
   const autoRef = useRef(auto.active); autoRef.current = auto.active
   const [hasGL] = useState(webglAvailable)
   const [pose, setPose] = useState(0)
+  const [sceneRef, inView] = useInView<HTMLDivElement>()
 
   useEffect(() => {
     const root = stepsRef.current
@@ -63,10 +64,10 @@ export function Ch2Candidates() {
         <div className="scrolly">
           <div className="scrolly-visual">
             <div className="scene">
-              <div className="scene-canvas" style={{ height: 'min(58vh, 620px)' }}>
+              <div className="scene-canvas" style={{ height: 'min(58vh, 620px)' }} ref={sceneRef}>
                 <span className="scene-badge">{focus} · 当前阶段展示机构</span>
                 {hasGL ? (
-                  <MechanismViewer cand={focus} ctrl={{ t: pose, explode: 0, xray: false, isolate: null, selected: null, traces: false, labels: false, preset: 'iso', presetToken: 0 }} onSelect={() => {}} onFallback={() => {}} className="viewer-fill" />
+                  <MechanismViewer cand={focus} ctrl={{ t: pose, explode: 0, xray: false, isolate: null, selected: null, traces: false, labels: false, preset: 'iso', presetToken: 0, frameToken: 0 }} onSelect={() => {}} onFallback={() => {}} className="viewer-fill" active={inView} />
                 ) : <FramePlayer cand={focus} />}
                 <div className="scene-caption">
                   <div className="cap-t">{info.label}：{info.lesson}</div>

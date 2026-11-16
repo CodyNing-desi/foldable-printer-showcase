@@ -1,7 +1,8 @@
+import { useState } from 'react'
 import { F04_TIMELINE } from '../data/analysis'
-import { useApp } from '../state'
+import { useApp, useInView } from '../state'
 import { F04Scene } from '../three/SchematicScenes'
-import type { F04Mode } from '../three/SchematicScenes'
+import type { F04Mode, ViewMode } from '../three/SchematicScenes'
 
 const MODES: { id: F04Mode; label: string; cap: string; detail: string }[] = [
   { id: 'before', label: 'Before · 抽象模型', cap: '优化器优化的，是一条没有槽轨的抽象路径', detail: '抬升 → 平移 → 转轴。guided 参数从未被使用，F04 与根部翻折共用轨迹函数。优化解 lift=70/shift=20 在此模型下 0 穿透。' },
@@ -11,6 +12,8 @@ const MODES: { id: F04Mode; label: string; cap: string; detail: string }[] = [
 
 export function Ch4F04() {
   const { f04Mode, setF04Mode, f04T, setF04T, openEvidence } = useApp()
+  const [view, setView] = useState<ViewMode>('full')
+  const [sceneRef, inView] = useInView<HTMLDivElement>()
   const mode = MODES.find(m => m.id === f04Mode)!
 
   return (
@@ -27,15 +30,19 @@ export function Ch4F04() {
         </div>
 
         <div className="scene">
-          <div className="scene-canvas">
+          <div className="scene-canvas" ref={sceneRef}>
             <span className="scene-badge">原理示意 · 按 candidates.json 与审查记录参数重建（F04 无 CAD 零件）</span>
-            <F04Scene t={f04T} mode={f04Mode} />
+            <F04Scene t={f04T} mode={f04Mode} view={view} active={inView} />
             <div className="scene-caption">
               <div className="cap-t">{mode.cap}</div>
               <div className="cap-d">{mode.detail}</div>
             </div>
           </div>
           <div className="vbar">
+            <div className="seg">
+              <button className={view === 'full' ? 'on' : ''} onClick={() => setView('full')}>整体视角</button>
+              <button className={view === 'close' ? 'on danger' : ''} onClick={() => setView('close')}>干涉特写</button>
+            </div>
             <span className="meta">运动进度</span>
             <input type="range" min={0} max={1} step={0.005} value={f04T} onChange={e => setF04T(Number(e.target.value))} aria-label="F04 运动进度" />
             <span className="meta mono">{Math.round(f04T * 100)}%</span>

@@ -52,6 +52,26 @@ export const EXPLODE: Record<string, Record<string, ExplodeSpec>> = {
 
 export type CamPreset = 'iso' | 'front' | 'side' | 'top' | 'detail'
 
+// 视线方向（Z-up 世界）。距离由自动取景按包围盒计算，这里只定方向。
+export const CAM_DIRS: Record<CamPreset, [number, number, number]> = {
+  iso: [1, -1, 0.72],
+  front: [0, -1, 0.16],
+  side: [1, 0, 0.16],
+  top: [0, -0.18, 1],
+  detail: [1, -1, 0.5],
+}
+
+// 零件功能分组配色（工业可视化口径，参考 CADScope 分类调色）
+export const PART_COLORS: Record<string, string> = {
+  BASE: '#aeb6c0', BED: '#c2c8d0', CARD: '#aeb6c0',
+  TWR: '#7d8590', POST: '#7d8590',
+  CAR: '#2456e6', SLB: '#2456e6', SLT: '#2456e6', SLIDER: '#2456e6',
+  COL: '#e0a63a',
+  XBAR: '#1a7f4b', BRG: '#1a7f4b', PLAT: '#1a7f4b',
+  SYNC: '#7c5cd6', SHB: '#7c5cd6', SHT: '#7c5cd6',
+  ARM: '#f0883e', ARM_A: '#f0883e', ARM_B: '#f0883e', FOOT: '#f0883e',
+}
+
 export const CAM_PRESETS: Record<string, Record<CamPreset, { pos: [number, number, number]; target: [number, number, number] }>> = {
   F09_L82: {
     iso: { pos: [300, -330, 230], target: [70, 0, 85] },

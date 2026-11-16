@@ -27,11 +27,12 @@ export interface ViewerCtrl {
   labels: boolean
   preset: CamPreset
   presetToken: number
+  frameToken: number
 }
 
 export const DEFAULT_CTRL: ViewerCtrl = {
   t: 0, playing: false, explode: 0, xray: false, isolate: null, selectedPart: null,
-  traces: false, labels: true, preset: 'iso', presetToken: 0,
+  traces: false, labels: true, preset: 'iso', presetToken: 0, frameToken: 0,
 }
 
 interface AutoState { active: boolean; index: number; paused: boolean; progress: number }
@@ -45,8 +46,6 @@ interface AppState {
   openEvidence: (id: string | null) => void
   motionTab: string
   setMotionTab: (id: string) => void
-  ctrl: ViewerCtrl
-  setCtrl: (patch: Partial<ViewerCtrl>) => void
   f04Mode: F04Mode
   setF04Mode: (m: F04Mode) => void
   f04T: number
@@ -72,6 +71,27 @@ export function useApp(): AppState {
   const v = useContext(Ctx)
   if (!v) throw new Error('useApp outside provider')
   return v
+}
+
+// 独立的 viewer 控制上下文：播放 t 每帧变化时只重渲染 3D 消费者，不波及全应用
+const CtrlCtx = createContext<{ ctrl: ViewerCtrl; setCtrl: (patch: Partial<ViewerCtrl>) => void } | null>(null)
+export function useCtrl() {
+  const v = useContext(CtrlCtx)
+  if (!v) throw new Error('useCtrl outside provider')
+  return v
+}
+
+export function useInView<T extends HTMLElement>(margin = '120px') {
+  const ref = useRef<T | null>(null)
+  const [inView, setInView] = useState(true)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const ob = new IntersectionObserver(es => { for (const e of es) setInView(e.isIntersecting) }, { rootMargin: margin, threshold: 0.02 })
+    ob.observe(el)
+    return () => ob.disconnect()
+  }, [margin])
+  return [ref, inView] as const
 }
 
 export function AppProvider({ children }: { children: ReactNode }) {
@@ -161,11 +181,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<AppState>(() => ({
     stage, setStage, selected, openCandidate, evidence, openEvidence, motionTab, setMotionTab,
-    ctrl, setCtrl, f04Mode, setF04Mode, f04T, setF04T, f12Extend, setF12Extend, f12Wobble, setF12Wobble,
+    f04Mode, setF04Mode, f04T, setF04T, f12Extend, setF12Extend, f12Wobble, setF12Wobble,
     auto, startAuto, exitAuto, togglePause, autoNext, autoPrev, reduced, activeChapter, setActiveChapter, scrollTo,
-  }), [stage, selected, evidence, motionTab, ctrl, f04Mode, f04T, f12Extend, f12Wobble, auto, reduced, activeChapter, setCtrl, openCandidate, openEvidence, startAuto, exitAuto, togglePause, autoNext, autoPrev, scrollTo])
+  }), [stage, selected, evidence, motionTab, f04Mode, f04T, f12Extend, f12Wobble, auto, reduced, activeChapter, openCandidate, openEvidence, startAuto, exitAuto, togglePause, autoNext, autoPrev, scrollTo])
 
-  return <Ctx.Provider value={value}>{children}</Ctx.Provider>
+  const ctrlValue = useMemo(() => ({ ctrl, setCtrl }), [ctrl, setCtrl])
+
+  return <Ctx.Provider value={value}><CtrlCtx.Provider value={ctrlValue}>{children}</CtrlCtx.Provider></Ctx.Provider>
 }
 
 export function assetUrl(p: string): string {

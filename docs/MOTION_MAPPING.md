@@ -22,7 +22,7 @@
 1. `import` 该方案 CAD_SOURCE 的 `validate_r1` / `joints_r1`（逐方案隔离模块缓存）。
 2. `load_parts()` 加载结构件（与原渲染器口径一致；销/卡圈为紧固件，不进入运行时网格，规格见 BOM）。
 3. 逐实例命名节点导出 `assembly.glb`（几何保持局部坐标）。
-4. 对 `placements(cand, t)` 在 t∈[0,1] 密集采样 **161 步**，记录每实例位置 + 四元数 → `tracks.json`。
+4. 对 `placements(cand, t)` 在 t∈[0,1] 密集采样 **161 步**，记录每实例位置 + 四元数（**three.js 原生 x,y,z,w 序**；trimesh 原始输出为 w,x,y,z，导出时已转换）→ `tracks.json`。
 5. 导出 `joints.json`（运动副基准）、`manifest.json`（实例/基础件清单、包围盒）、`keyposes.json`（t=0/0.2/0.42/0.7/1.0 真值）。
 
 **浏览器端只做插值**（位置线性 + 四元数 slerp），不实现任何独立运动学逻辑，因此连续运动与原 CAD 姿态按构造对齐。
@@ -38,6 +38,14 @@
 
 实例名与 `placements()` 输出键一一对应（TWR_0/1、CAR_0/1、COL_0/1、XBAR、BRG、SYNC、ARM、BASE、BED 等）；
 SCZ 的 BED 不在 `scz_placements()` 中，按单位变换放置（与原装配语义一致）。
+
+## 第三轮修复的关键映射/渲染问题（已解决）
+
+1. **四元数序**：trimesh `quaternion_from_matrix` 输出 (w,x,y,z)，three.js 需要 (x,y,z,w)。导出脚本已转换；此前误读导致单位四元数变成 180° 翻转、包围盒 z 出现 -164。
+2. **共享 scene 抢占**：`useGLTF` 缓存返回同一 Object3D，`<primitive>` 挂载会把它从先挂载的父节点摘走（最后挂载的 Ch7 独占模型，首页/候选页空画布）。现每实例 `gltf.scene.clone(true)`。
+3. **轴向**：CAD 世界为 Z-up；所有 Canvas `camera.up=(0,0,1)` + `flat`（无色调映射），保证零件配色不被 ACES 压灰。
+4. **自动取景**：目标盒 = 当前爆炸进度下整条运动轨道（12 采样）的包围盒并集（姿态不变）；隔离=当前姿态盒；关节特写=当前运动副基准盒。相机以阻尼系数 0.12 平滑趋近目标（用户 OrbitControls 拖拽期间不干预），切换方案/预设时立即吸附。播放/scrub 不引起镜头抖动，任何姿态完整可见。
+5. **上下文泄漏**：`webglAvailable()` 单例缓存并立即 `loseContext()` 释放探测上下文；离屏场景 `frameloop='demand'`。
 
 ## 运行时（src/three/MechanismViewer.tsx）
 

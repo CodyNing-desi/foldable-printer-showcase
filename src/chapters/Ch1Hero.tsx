@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useApp, assetUrl } from '../state'
+import { useApp, assetUrl, useInView } from '../state'
 import { MechanismViewer, webglAvailable } from '../three/MechanismViewer'
 import { AUTO_TOTAL } from '../autoplay'
 
@@ -7,6 +7,7 @@ export function Ch1Hero() {
   const { scrollTo, startAuto } = useApp()
   const [fold, setFold] = useState(0)
   const [hasGL] = useState(webglAvailable)
+  const [sceneRef, inView] = useInView<HTMLDivElement>()
 
   return (
     <section className="chapter" id="ch1">
@@ -27,12 +28,12 @@ export function Ch1Hero() {
         </div>
       </div>
       <div className="scene">
-        <div className="scene-canvas">
+        <div className="scene-canvas" ref={sceneRef}>
           <span className="scene-badge">F09_L82 · R1-V6 真实 CAD 装配 · 缩比 1:2</span>
           {hasGL ? (
             <MechanismViewer
               cand="F09_L82"
-              ctrl={{ t: fold, explode: 0, xray: false, isolate: null, selected: null, traces: false, labels: false, preset: 'iso', presetToken: 0 }}
+              ctrl={{ t: fold, explode: 0, xray: false, isolate: null, selected: null, traces: false, labels: false, preset: 'iso', presetToken: 0, frameToken: 0 }}
               onSelect={() => {}} onFallback={() => {}} className="viewer-fill"
             />
           ) : (

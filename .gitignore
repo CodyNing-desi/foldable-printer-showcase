@@ -2,3 +2,7 @@ node_modules/
 dist/
 e2e/shots/
 *.log
+
+e2e/shots3d/
+e2e/shots3d-1366/
+e2e/shots-ui/
