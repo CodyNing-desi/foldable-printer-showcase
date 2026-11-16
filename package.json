@@ -1,1 +1,27 @@
-{"name": "foldable-printer-showcase", "private": true, "version": "1.0.0", "type": "module", "scripts": {"dev": "vite", "build": "tsc --noEmit && vite build", "preview": "vite preview", "test:e2e": "node e2e/run.mjs"}, "dependencies": {"framer-motion": "11.18.2", "react": "18.3.1", "react-dom": "18.3.1"}, "devDependencies": {"@types/react": "18.3.18", "@types/react-dom": "18.3.5", "@vitejs/plugin-react": "4.4.1", "typescript": "5.7.3", "vite": "6.3.5"}}
+{
+  "name": "foldable-printer-showcase",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test:e2e": "node e2e/run.mjs",
+    "test:layout": "node e2e/layout.mjs",
+    "test": "node e2e/run.mjs && node e2e/layout.mjs"
+  },
+  "dependencies": {
+    "framer-motion": "11.18.2",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "18.3.18",
+    "@types/react-dom": "18.3.5",
+    "@vitejs/plugin-react": "4.4.1",
+    "typescript": "5.7.3",
+    "vite": "6.3.5",
+    "playwright": "1.65.1"
+  }
+}

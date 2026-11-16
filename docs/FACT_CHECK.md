@@ -36,3 +36,14 @@
 - 4× motion.gif、4×5 view_*.png、4× joint_schematic.png、4× contact_sheet.png（round1-demo-cad @ d35cbd1）
 - 48×4 帧 WebP（由 motion.gif 无损时序提取，用于可拖动播放）
 - 证据文档本地副本：PROCESS_REVIEW / independent_review_round1 / screening_summary / selection / screening_v2 / screening_v3 / DECISION / FINAL_DECISION / LINEUP_DECISION / LINEUP_DECISION_V3_2_1 / FINAL_REPORT_V3_2_1 / v3_2_1_verification_summary / THIRD_OPTION_DECISION / CURRENT_DECISION / CAD README / MOTION_VALIDATION_REPORT / MODEL_LIMITATIONS / CHANGELOG_V5_V6 / PRINT_PLAN_5_MACHINES
+
+## 增补（2026-11-16 整改）：实物执行状态口径
+
+- 团队现场口径（2026-11-16）：**昨晚打印计划已执行完毕**；存在 **PETG 零件数量不足** 等实际制造问题。
+- 网站据此把状态拆为：方案筛选/CAD冻结/打印计划制定/打印任务执行 = 完成；零件齐套检查 = 进行中；装配验证/实测回填/最终选型 = 待执行。不再使用"正在打印/已进入排产"表述。
+- PETG 零件口径来自 `ROUND1_DEMO_CAD/MASTER_PARTS_BOM.csv`（R1-V6，MASTER 去重，UTF-8）：PETG 共 23 项 / 133 件。
+  - 跨方案共享：F09-CLIP3 ×42（四方案）、F09-PIN3-L14 ×14（F09+F07+F08）、F09-PIN5-L34/PIN3-L34/PIN3-L26 共 ×16、F09-CLIP5 ×5（F09+F07）。
+  - SCZ 专属 44 件：SCZ-ARM ×4、SLB/SLT ×4、SHB/SHT ×2、销/卡圈 ×34。
+  - F09 专属销 ×8、F08 专属 ×4。
+- 具体缺口数量、补打/外购决策**待团队齐套核查回填**，网站不编造缺口数字；对策仅引用 BOM"替代方案"列（金属销/E形卡圈外购评估、SCZ 臂加厚需改叉耳槽）。
+- 缩比边界在决策板（Ch6）、动画页（Ch7）、走向实物（Ch8）三处关键节点重复声明：F09 刚性同步杆 ≠ 原双丝杆+同步带性能验证；SCZ 手动剪叉 ≠ 丝杆推力/效率验证。

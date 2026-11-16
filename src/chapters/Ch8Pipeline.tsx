@@ -1,13 +1,6 @@
 import { useApp } from '../state'
-
-const PIPE = [
-  { label: '方案筛选', state: 'done', note: '15 候选 · 7 阶段' },
-  { label: '仿真审查', state: 'done', note: '两轮独立审查 + 认证上界' },
-  { label: 'CAD 修正', state: 'done', note: 'R1-V5 → R1-V6' },
-  { label: '实物打印', state: 'active', note: 'L4 试件 + 正式零件排产/执行中' },
-  { label: '装配验证', state: 'pending', note: '结果待回填' },
-  { label: '最终选型', state: 'pending', note: '由实物闸门决定' },
-]
+import { ManufacturingLadder, ManufacturingIssues, VerificationBoundary } from '../components/ManufacturingPanel'
+import { Icon } from '../components/Icons'
 
 const FIXES = [
   { tag: 'P0-1', title: 'F09 中央 X 臂真实铰接', body: 'V5 臂悬空于 y=0，仅动画对齐；V6 零件级 CAD：中横梁 BRG 抬高并加中央叉耳，X 臂物理铰接。', ev: 'L2b 闭合径向/轴线误差 ~0；孔轴审计 BRG/ARM 孔存在' },
@@ -23,52 +16,45 @@ export function Ch8Pipeline() {
     <section className="chapter" id="ch8">
       <div className="container">
         <div className="ch-kicker">CHAPTER 08 · 从仿真走向实物</div>
-        <h2 className="ch-title">当前进度：CAD 已冻结，实物正在打印</h2>
+        <h2 className="ch-title">打印执行完了，但制造问题没有结束</h2>
         <p className="ch-lead">
-          R1-V6 完成并经独立审查修复；L4 接口试件与正式零件已进入打印排产/执行阶段（五机排产计划）。
-          实物装配与测试结果仍待回填——<strong>仿真到此为止，剩下的问题交给实物</strong>。
+          昨晚打印计划已执行完毕——但<strong>打印执行完成 ≠ 零件齐套 ≠ 装配完成 ≠ 实验完成</strong>。
+          现场盘点发现 PETG 零件数量不足等实际制造问题。这一章把执行状态拆开，把问题摆上桌。
         </p>
 
-        <div className="pipe">
-          {PIPE.map(p => (
-            <div key={p.label} className={`pipe-step ${p.state === 'done' ? 'done' : ''} ${p.state === 'active' ? 'active-step' : ''}`}>
-              <div className="dot" />
-              <b>{p.label}</b>
-              <span>{p.state === 'done' ? '已完成 · ' : p.state === 'active' ? '进行中 · ' : '待执行 · '}{p.note}</span>
-            </div>
-          ))}
-        </div>
+        <ManufacturingLadder />
 
-        <h3 style={{ fontSize: 18, margin: '26px 0 14px' }}>V5 独立审查 → V6 修复（保留问题记录，不删除失败版本）</h3>
-        <div className="fix-grid">
-          {FIXES.map(f => (
-            <div className="fix-card" key={f.tag}>
-              <span className="tag">{f.tag}</span>
-              <h4>{f.title}</h4>
-              <p>{f.body}</p>
-              <span className="ev">证据：{f.ev}</span>
+        <div className="ch8-split">
+          <ManufacturingIssues />
+          <div>
+            <h3 style={{ fontSize: 18, margin: '0 0 14px' }}>V5 独立审查 → V6 修复（保留问题记录，不删除失败版本）</h3>
+            <div className="fix-grid">
+              {FIXES.map(f => (
+                <div className="fix-card" key={f.tag}>
+                  <span className="tag">{f.tag}</span>
+                  <h4>{f.title}</h4>
+                  <p>{f.body}</p>
+                  <span className="ev">证据：{f.ev}</span>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-        <div style={{ marginTop: 14, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button className="ev-link" onClick={() => openEvidence('cadchangelog')}>CHANGELOG_V5_V6.md</button>
-          <button className="ev-link" onClick={() => openEvidence('cadprint')}>PRINT_PLAN_5_MACHINES.md</button>
-          <button className="ev-link" onClick={() => openEvidence('cadguide')}>ASSEMBLY_GUIDE.md</button>
-          <button className="ev-link" onClick={() => openEvidence('cadmotion')}>MOTION_VALIDATION_REPORT.md</button>
-        </div>
-
-        <div className="panel" style={{ marginTop: 26 }}>
-          <h3>已验证 vs 待实物验证</h3>
-          <div className="dec-grid" style={{ gap: 16 }}>
-            <ul className="reason-list">
-              <li><b>已验证（CAD/仿真级）：</b>运动学相位与限位、2001 步密集采样无穿透、关键相位凸包保守检查、L2b 装配约束闭合与孔轴审计、认证连续碰撞（V3.2.1 简化 OBB 模型）。</li>
-              <li><b>证据边界：</b>认证净距 0.007–0.023 mm 为 OBB 理论值，不覆盖 FDM ±0.2–0.5 mm 公差；演示模型配合间隙按 0.3/0.4 mm 设计，须试件冻结。</li>
-            </ul>
-            <ul className="reason-list">
-              <li><b>待实物验证：</b>真实打印配合（L4 试件）、摩擦/间隙/卡滞、承载与刚度、寿命、双侧同步误差、SCZ 低位推力与双向回差、折叠前后同 G-code 打印对照。</li>
-              <li><b>闸门规则：</b>SCZ 回差 &gt;0.15 mm 或低位卡滞即终止；F09 左右高度差 &gt;0.15 mm 别卡即停；F07 挠度/重复定位超限切 F08。</li>
-            </ul>
+            <div style={{ marginTop: 14, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button className="ev-link" onClick={() => openEvidence('cadchangelog')}>CHANGELOG_V5_V6.md</button>
+              <button className="ev-link" onClick={() => openEvidence('cadmotion')}>MOTION_VALIDATION_REPORT.md</button>
+            </div>
           </div>
+        </div>
+
+        <h3 style={{ fontSize: 18, margin: '30px 0 14px' }}><Icon name="eye" size={16} /> 当前模型已验证 / 未验证的清晰边界</h3>
+        <VerificationBoundary />
+
+        <div className="panel" style={{ marginTop: 22 }}>
+          <h3>下一步实验重点（闸门规则不变）</h3>
+          <ul className="reason-list">
+            <li><b>先齐套：</b>PETG 缺口盘点 → 补打/改排产决策 → L4 试件试配冻结配合间隙。</li>
+            <li><b>SCZ：</b>回差 &gt;0.15 mm 或低位卡滞即终止；<b>F09：</b>左右高度差 &gt;0.15 mm 别卡即停；<b>F07：</b>挠度/重复定位超限切 F08。</li>
+            <li><b>最终对照：</b>通过闸门的 1–2 套方案组装完整打印机，折叠前后同一 G-code 各三次打印对照。</li>
+          </ul>
         </div>
 
         <div className="final-quote">让仿真决定值得测试什么，<br />让实物决定最终留下什么。</div>

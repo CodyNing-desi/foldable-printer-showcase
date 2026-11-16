@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import { MOTIONS, phaseAt } from '../data/motion'
+import { MOTIONS, phaseAt, phaseIndex } from '../data/motion'
 import type { MotionSpec } from '../data/motion'
 import { useApp, assetUrl } from '../state'
+import { ExplainerOverlay, Magnifier, PhaseInsight, DecisionBanner } from '../components/MotionExplainer'
+import { Icon } from '../components/Icons'
 
 interface Manifest { [mech: string]: { n_frames: number; size: number[]; frames: { file: string; t: number; delay_ms: number }[] } }
 
@@ -22,10 +24,10 @@ export function Ch7Motion() {
     <section className="chapter" id="ch7">
       <div className="container">
         <div className="ch-kicker">CHAPTER 07 · 最终机构运动展示</div>
-        <h2 className="ch-title">三条路线的真实 CAD 运动（R1-V6）</h2>
+        <h2 className="ch-title">不只是"它在动"——每一步为什么这么动</h2>
         <p className="ch-lead">
-          以下动画全部来自仓库 <strong>round1-demo-cad @ d35cbd1</strong> 的真实渲染帧（48 帧 · 640×500 · 120 ms/帧），
-          可播放、暂停、重播，也可拖动进度条逐帧查看。相位标签来自 CAD 源码的运动学定义。
+          动画全部来自仓库 <strong>round1-demo-cad @ d35cbd1</strong> 的真实渲染帧（48 帧 · 640×500 · 120 ms/帧）。
+          解释层标出当前阶段的关键关节、运动目的与风险点；放大镜裁切真实帧局部；每条路线附"已验证 / 未验证"边界。
         </p>
 
         <div className="motion-tabs" role="tablist" aria-label="方案切换">
@@ -65,6 +67,7 @@ function MotionView({ spec, frames }: { spec: MotionSpec; frames: { file: string
   const [frame, setFrame] = useState(0)
   const [playing, setPlaying] = useState(false)
   const [ready, setReady] = useState(false)
+  const [overlay, setOverlay] = useState(true)
   const frameRef = useRef(frame)
   frameRef.current = frame
   const n = frames.length
@@ -116,6 +119,7 @@ function MotionView({ spec, frames }: { spec: MotionSpec; frames: { file: string
 
   const t = frames[frame]?.t ?? 0
   const phase = phaseAt(spec, t)
+  const pIdx = phaseIndex(spec, t)
   const toggle = () => {
     if (!playing && frame >= n - 1) setFrame(0)
     setPlaying(p => !p)
@@ -129,10 +133,18 @@ function MotionView({ spec, frames }: { spec: MotionSpec; frames: { file: string
   return (
     <div className="motion-grid">
       <div className="player">
-        <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>{spec.title}</div>
-        <div className="tiny muted" style={{ marginBottom: 12 }}>{spec.subtitle}</div>
+        <div className="player-head">
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 700 }}>{spec.title}</div>
+            <div className="tiny muted">{spec.subtitle}</div>
+          </div>
+          <button className={`btn sm ${overlay ? 'primary' : 'ghost'}`} onClick={() => setOverlay(o => !o)} aria-pressed={overlay}>
+            <Icon name="eye" size={13} /> 解释层 {overlay ? '开' : '关'}
+          </button>
+        </div>
         <div className="screen">
           <img src={assetUrl(frames[frame].file)} alt={`${spec.title} 帧 ${frame + 1}/${n}，t=${t.toFixed(2)}`} />
+          {overlay && ready && <ExplainerOverlay spec={spec} phaseIdx={pIdx} />}
           {!ready && <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#333' }}>帧加载中…</div>}
         </div>
         <div className="player-controls">
@@ -148,9 +160,9 @@ function MotionView({ spec, frames }: { spec: MotionSpec; frames: { file: string
           </span>
         </div>
         <div className="phase-bar" aria-hidden="true">
-          {spec.phases.map(p => (
+          {spec.phases.map((p, i) => (
             <div key={p.label + p.from}
-              className={`phase-seg ${phase === p ? 'on' : ''}`}
+              className={`phase-seg ${i === pIdx ? 'on' : ''}`}
               style={{ width: `${(p.to - p.from) * 100}%` }}>
               {(p.to - p.from) >= 0.12 ? p.label : ''}
             </div>
@@ -158,8 +170,8 @@ function MotionView({ spec, frames }: { spec: MotionSpec; frames: { file: string
         </div>
         <div className="phase-detail">
           <b>当前阶段：{phase.label}</b> · {phase.detail}
-          {reduced && <span className="tiny muted">（已按系统设置减少动效）</span>}
         </div>
+        <PhaseInsight spec={spec} phaseIdx={pIdx} />
         <div className="keyframes">
           {spec.keyframes.map(k => (
             <button key={k.name}
@@ -179,8 +191,10 @@ function MotionView({ spec, frames }: { spec: MotionSpec; frames: { file: string
         </div>
       </div>
 
-      <div>
-        <div className="panel">
+      <div className="motion-side">
+        <DecisionBanner spec={spec} />
+        <Magnifier spec={spec} phaseIdx={pIdx} frameFile={frames[frame].file} />
+        <div className="panel" style={{ marginTop: 14 }}>
           <h3>台架关注点</h3>
           <ul className="focus-list">
             {spec.focus.map((f, i) => <li key={i}>{f}</li>)}

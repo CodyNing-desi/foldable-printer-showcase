@@ -6,6 +6,8 @@ import { EV_BY_ID } from '../data/evidence'
 import type { StageId } from '../data/types'
 import { useApp } from '../state'
 import { CandidateCard } from '../components/CandidateCard'
+import { StageSummary } from '../components/StageSummary'
+import { Icon } from '../components/Icons'
 
 const STEP_TEXT: Record<StageId, { title: string; body: string }> = {
   s0: { title: '起点：15 种机构构想', body: '根部翻折、横臂、伸缩、槽轨、外部托架、箱体、抽屉、剪叉分别实例化。未知尺寸显式写成假设，不冒充实测。此时所有卡片都是"未验证"。' },
@@ -80,8 +82,11 @@ export function Ch2Candidates() {
           </span>
         </div>
 
+        <StageSummary stage={info} />
+
         <div className="scrolly">
           <div className="scrolly-sticky">
+            <div className="sticky-rule"><Icon name="flag" size={13} /><span>{info.rule}</span></div>
             <LayoutGroup>
               {isFinal ? (
                 <div className="final-groups">

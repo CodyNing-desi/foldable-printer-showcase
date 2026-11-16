@@ -1,7 +1,14 @@
 import { ROBUST_TABLE, THIRD_COMPARE, QUAL_MATRIX, FINAL_BOARD } from '../data/analysis'
+import { ELIM_BY_ID } from '../data/eliminations'
+import { MOTIONS } from '../data/motion'
 import { useApp } from '../state'
 import { StatusBadge } from '../components/StatusBadge'
+import { EliminationCard } from '../components/EliminationCard'
+import { RiskCallout } from '../components/RiskCallout'
+import { Icon } from '../components/Icons'
 import type { Status } from '../data/types'
+
+const MOTION_BY_BOARD: Record<string, string> = { F09_L82: 'F09_L82', F07: 'F07', SCZ: 'SCZ', F08: 'F08_OPTIONAL' }
 
 const BOARD_STATUS: Record<string, Status> = {
   'F09_L82': 'conditional', F07: 'conditional', SCZ: 'bench', F08: 'fallback', F12: 'nogo',
@@ -87,25 +94,47 @@ export function Ch6Decision() {
           </p>
         </div>
 
+        <RiskCallout tone="warn" title="读决策板前先记住缩比边界">
+          下列"已验证"仅指 R1-V6 缩比 CAD 的运动与装配逻辑。F09 刚性同步杆不代表原双丝杆+同步带性能；SCZ 手动剪叉不代表丝杆推力与效率。整机性能结论一律待实物。
+        </RiskCallout>
+
         <div className="board">
-          {FINAL_BOARD.map(b => (
-            <div className="board-card" key={b.id} style={{ borderTopColor: BOARD_COLOR[b.id] }}>
-              <StatusBadge status={BOARD_STATUS[b.id]} label={b.status} />
-              <h4>{b.id}</h4>
-              <div className="role">{b.role} · V3.2.1 冻结</div>
-              <div className="nums">
-                <span>收纳比 <b className="mono">{b.storage}</b></span>
-                <span>10 N Y 挠度 <b className="mono">{b.defl}</b></span>
+          {FINAL_BOARD.map(b => {
+            const mot = MOTIONS.find(m => m.id === MOTION_BY_BOARD[b.id])
+            return (
+              <div className="board-card" key={b.id} style={{ borderTopColor: BOARD_COLOR[b.id] }}>
+                <StatusBadge status={BOARD_STATUS[b.id]} label={b.status} />
+                <h4>{b.id}</h4>
+                <div className="role">{b.role} · V3.2.1 冻结</div>
+                <div className="nums">
+                  <span>收纳比 <b className="mono">{b.storage}</b></span>
+                  <span>10 N Y 挠度 <b className="mono">{b.defl}</b></span>
+                </div>
+                <div className="bench"><b>台架验证：</b>{b.bench}</div>
+                <div className="nogo"><b>停止/切换：</b>{b.nogo}</div>
+                {mot ? (
+                  <div className="board-boundary">
+                    <div className="bb-ok"><Icon name="check" size={11} />已验证：{mot.decision.verified[0]}等 {mot.decision.verified.length} 项</div>
+                    <div className="bb-bad"><Icon name="flask" size={11} />未验证：{mot.decision.notVerified[0]}等 {mot.decision.notVerified.length} 项</div>
+                  </div>
+                ) : (
+                  <div className="board-boundary">
+                    <div className="bb-bad"><Icon name="stop" size={11} />不制造；仿真结论与风险记录归档</div>
+                  </div>
+                )}
               </div>
-              <div className="bench"><b>台架验证：</b>{b.bench}</div>
-              <div className="nogo"><b>停止/切换：</b>{b.nogo}</div>
-            </div>
-          ))}
+            )
+          })}
         </div>
 
         <div className="scz-callout">
           SCZ 不是因为所有指标最优秀而入围，而是因为它提供了另一种机构路线最需要被实物验证的问题——
           低位输入力比、双向回差、左右同步与非线性 Z 映射。它只做台架，不做整机主力。
+        </div>
+
+        <div className="dec-scope-cards">
+          <EliminationCard e={ELIM_BY_ID['F08']} compact />
+          <EliminationCard e={ELIM_BY_ID['SCZ']} compact />
         </div>
 
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 18 }}>

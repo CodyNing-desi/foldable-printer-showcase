@@ -1,5 +1,5 @@
 // 布局几何审计：1920×1080 投影与 1366×768 笔记本下逐章检查溢出/可见性/关键元素尺寸
-import { chromium } from 'playwright'
+import { launchBrowser } from './browser.mjs'
 import http from 'node:http'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -17,7 +17,7 @@ const server = http.createServer((req, res) => {
   fs.createReadStream(file).pipe(res)
 })
 await new Promise(r => server.listen(4174, r))
-const browser = await chromium.launch({ executablePath: process.env.CHROME_PATH || 'C:/Users/94823/AppData/Local/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-win64/chrome-headless-shell.exe', args: ['--no-sandbox'] })
+const browser = await launchBrowser()
 
 for (const vp of [{ width: 1920, height: 1080 }, { width: 1366, height: 768 }]) {
   const page = await browser.newPage({ viewport: vp })
@@ -36,10 +36,10 @@ for (const vp of [{ width: 1920, height: 1080 }, { width: 1366, height: 768 }]) 
         ch2: ['.scrolly-sticky', '.cand-grid, .final-groups', '.stage-pills'],
         ch3: ['.matrix', '.sampling svg', '.concept-cards'],
         ch4: ['.f04-stage svg', '.conclusion-banner'],
-        ch5: ['.f12-grid', '.f12-track'],
+        ch5: ['.f12-tri', '.f12-track', '.stamp'],
         ch6: ['.board', '.scz-callout'],
         ch7: ['.player .screen', '.phase-bar', '.kf-strip'],
-        ch8: ['.pipe', '.final-quote'],
+        ch8: ['.mfg-ladder', '.mfg-issues', '.boundary', '.final-quote'],
       }[cid]
       for (const s of sel) {
         const el = document.querySelector(`#${cid} ${s}`)

@@ -1,7 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { MATRIX_V1, MATRIX_COLS, SINUSOID } from '../data/analysis'
 import { CAND_BY_ID } from '../data/candidates'
+import { ELIMINATIONS } from '../data/eliminations'
+import { REASON_META } from '../data/types'
+import type { ReasonCategory } from '../data/types'
 import { useApp } from '../state'
+import { EliminationCard } from '../components/EliminationCard'
+import { Icon } from '../components/Icons'
 
 type Mode = 'nominal' | 'optimized'
 type DemoMode = 'before' | 'certified' | 'unresolved'
@@ -141,6 +146,23 @@ export function Ch3Matrix() {
           </p>
           <button className="ev-link" onClick={() => openEvidence('report321')}>V3.2.1 验收纠错报告</button>
           {' '}<button className="ev-link" onClick={() => openEvidence('review1')}>第一轮独立审查 · medium-5</button>
+        </div>
+
+        <div className="elim-gallery">
+          <div className="elim-gallery-head">
+            <h3>淘汰理由图谱 · 结构化证据卡</h3>
+            <p className="muted small">每一次淘汰、撤回、转折与范围限定，都按"当时被看好 → 触发问题 → 问题类别 → 一句话结论"展开。点击编号打开完整证据链。</p>
+            <div className="reason-legend">
+              {(Object.keys(REASON_META) as ReasonCategory[]).map(k => (
+                <span key={k} className="reason-legend-item" style={{ color: REASON_META[k].color }}>
+                  <Icon name={REASON_META[k].icon} size={12} />{REASON_META[k].label}
+                </span>
+              ))}
+            </div>
+          </div>
+          <div className="elim-grid">
+            {ELIMINATIONS.map(e => <EliminationCard key={e.id} e={e} />)}
+          </div>
         </div>
       </div>
     </section>

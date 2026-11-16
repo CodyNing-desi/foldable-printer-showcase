@@ -1,5 +1,5 @@
 // 端到端验收：本地静态服务器 + Playwright（离线：阻断一切外部请求）
-import { chromium } from 'playwright'
+import { launchBrowser } from './browser.mjs'
 import http from 'node:http'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -28,8 +28,7 @@ const server = http.createServer((req, res) => {
 })
 await new Promise(r => server.listen(4173, r))
 
-const EXE = process.env.CHROME_PATH || 'C:/Users/94823/AppData/Local/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-win64/chrome-headless-shell.exe'
-const browser = await chromium.launch({ executablePath: EXE, args: ['--no-sandbox'] })
+const browser = await launchBrowser()
 const results = []
 const errors = []
 function check(name, ok, extra = '') {
@@ -102,10 +101,15 @@ await shot('07-sampling-certified')
 // 7. F04 前后对比
 await page.click('.nav-link:has-text("F04 逆转")')
 await page.waitForTimeout(900)
-await page.locator('#ch4 input[type=range]').fill('1')
-await page.waitForTimeout(300)
-check('F04 After 标签激活', await page.locator('#ch4 .f04-labels .on').textContent() === 'After · 补全机构后的模型')
-await shot('08-f04-after')
+await page.click('#ch4 .tri-tab:has-text("After")')
+await page.waitForTimeout(400)
+check('F04 After 视图激活', await page.locator('#ch4 .tri-tab.active').textContent().then(t => t.includes('After')))
+check('F04 缺失结构清单已实例化', await page.locator('#ch4 .missing-item.ok').count() === 5)
+await page.click('#ch4 .tri-tab:has-text("Why Failed")')
+await page.waitForTimeout(400)
+check('F04 WhyFailed 印章', (await page.locator('#ch4 .tri-view').textContent()).includes('0/238'))
+check('F04 淘汰证据卡', (await page.locator('#ch4 .elim-card').textContent()).includes('建模对象错了'))
+await shot('08-f04-whyfailed')
 
 // 8. F12 决策转移
 await page.click('.nav-link:has-text("F12 逆转")')
@@ -204,6 +208,37 @@ await page.click('.nav-link:has-text("15种候选")')
 await page.waitForTimeout(800)
 await shot('15-laptop-candidates')
 await page.setViewportSize({ width: 1920, height: 1080 })
+
+// 13b. 整改新增内容验收
+await page.click('.nav-link:has-text("统一筛选")')
+await page.waitForTimeout(800)
+check('阶段摘要面板存在', await page.locator('.stage-summary').count() >= 1)
+check('淘汰证据卡画廊 8 张', await page.locator('.elim-grid .elim-card').count() === 8)
+await shot('16-elimination-gallery')
+await page.click('.nav-link:has-text("15种候选")')
+await page.waitForTimeout(700)
+await page.click('.stage-pill:has-text("V1 审查修正")')
+await page.waitForTimeout(500)
+check('阶段摘要：推荐撤回 F04', (await page.locator('.ss-flow.revoke').textContent()).includes('F04'))
+check('sticky 规则条', await page.locator('.sticky-rule').count() === 1)
+await shot('17-stage-summary')
+await page.click('.nav-link:has-text("机构运动")')
+await page.waitForTimeout(1200)
+check('解释层标注可见', await page.locator('.explainer-overlay .mark').count() >= 1)
+check('放大镜面板', await page.locator('.magnifier-view').count() === 1)
+check('决策含义边界', (await page.locator('.decision-banner').textContent()).includes('还没验证'))
+check('阶段目的/风险解释', await page.locator('.phase-insight .pi-col').count() === 2)
+await shot('18-motion-explainer')
+await page.click('.nav-link:has-text("走向实物")')
+await page.waitForTimeout(800)
+const ch8text = await page.locator('#ch8').textContent()
+check('打印执行完成状态', ch8text.includes('打印任务执行') && ch8text.includes('昨晚计划已执行完毕'))
+check('零件齐套进行中', ch8text.includes('零件齐套检查') && ch8text.includes('PETG 数量不足'))
+check('制造问题面板', await page.locator('.issue-card').count() === 2)
+check('PETG 共享件表', (await page.locator('.petg-tables').textContent()).includes('F09-CLIP3'))
+check('已验证/未验证边界', await page.locator('.boundary-col').count() === 2)
+check('无过期"正在打印"表述', !ch8text.includes('正在打印') && !ch8text.includes('已进入打印排产'))
+await shot('19-manufacturing-status')
 
 // 14. 控制台错误
 const blocking = errors.filter(e => !/favicon/i.test(e))
