@@ -1,0 +1,234 @@
+{
+  "method": "100 normalized weight perturbations; best solution per candidate; top-three frequency; family-diverse selection",
+  "weight_seed": 20261113,
+  "baseline_weights": {
+    "storage": 0.25,
+    "error": 0.25,
+    "deflection": 0.15,
+    "reliability": 0.15,
+    "cost": 0.1,
+    "complexity": 0.1
+  },
+  "recommended_ids": [
+    "F07",
+    "F12"
+  ],
+  "recommendations": [
+    {
+      "id": "F07",
+      "solution_index": 2,
+      "parameters": {
+        "lift_mm": 80.00004520634599,
+        "shift_x_mm": -0.0004690842754385277
+      },
+      "storage": 0.49271601027413076,
+      "error": 0.5179036790187178,
+      "deflection": 0.3192892857142857,
+      "reliability": -77.0,
+      "cost": 320.00021023688316,
+      "complexity": 2.0,
+      "family_group": "root",
+      "baseline_score": 0.1669930059593163,
+      "robust_frequency": 1.0,
+      "candidate_pareto": true,
+      "dense_validation": {
+        "states": 1001,
+        "max_intersection_mm2": 0.0,
+        "storage_ratio": 0.49271601027413076,
+        "passed_screen": true
+      },
+      "name": "单立柱抬升根部翻折",
+      "family": "root_single",
+      "assumption": "先竖直抬升枢轴再翻折；抬升只发生在折叠过程，不增加工作高度。",
+      "final_static_metrics": {
+        "id": "F07",
+        "simulation_level": "L2_reduced_order_statics_stiffness",
+        "peak_torque_Nmm": 4061.34,
+        "peak_drive_force_N": 81.2268,
+        "drive_model": "gravity torque / declared 50 mm drive arm",
+        "beam_stiffness_N_mm": 32.6728745128241,
+        "lock_stiffness_N_mm": 756.1436672967864,
+        "equivalent_stiffness_N_mm": 31.31956018389056,
+        "tip_deflection_mm": 0.3192892857142857,
+        "estimated_incremental_cost_CNY": 320.00021023688316,
+        "reliability_proxy_score": 77.0,
+        "manufacturing_complexity_score": 2.0,
+        "storage_ratio": 0.49271601027413076,
+        "max_intersection_mm2": 0.0,
+        "workspace_coverage": 1.0,
+        "reachable_fraction": 1.0,
+        "passed_screen": true,
+        "screen_reasons": [],
+        "parameters": {
+          "lift_mm": 80.00004520634599,
+          "shift_x_mm": -0.0004690842754385277,
+          "fold_angle_deg": 90.0
+        }
+      },
+      "final_repeatability": {
+        "id": "F07",
+        "samples": 20000,
+        "seed": 20261200,
+        "input_distribution": "independent rectangular clearance and seat errors",
+        "mean_mm": 0.28489509259451573,
+        "std_mm": 0.14820322766470054,
+        "p50_mm": 0.2689566162407393,
+        "p95_mm": 0.5593065253886151,
+        "p99_mm": 0.646759392308423,
+        "max_mm": 0.780958147266725
+      }
+    },
+    {
+      "id": "F12",
+      "solution_index": 0,
+      "parameters": {
+        "overlap_mm": 65.34050206952026
+      },
+      "storage": 0.7998136323305236,
+      "error": 0.6265585158746263,
+      "deflection": 0.1707546876171722,
+      "reliability": -64.7,
+      "cost": 610.0,
+      "complexity": 4.1,
+      "family_group": "telescope",
+      "baseline_score": 0.4665895216224697,
+      "robust_frequency": 1.0,
+      "candidate_pareto": true,
+      "dense_validation": {
+        "states": 1001,
+        "max_intersection_mm2": 0.0,
+        "storage_ratio": 0.7998136323305236,
+        "passed_screen": true
+      },
+      "name": "三级伸缩立柱",
+      "family": "telescope_3",
+      "assumption": "三级嵌套，完整展开后分级独立锁紧；仅工作位保证打印行程。",
+      "final_static_metrics": {
+        "id": "F12",
+        "simulation_level": "L2_reduced_order_statics_stiffness",
+        "peak_torque_Nmm": 0.0,
+        "peak_drive_force_N": 39.7305,
+        "drive_model": "vertical telescope gravity and 0.08 friction / 0.8 efficiency",
+        "beam_stiffness_N_mm": 59.600946134095025,
+        "lock_stiffness_N_mm": 3364.605976049314,
+        "equivalent_stiffness_N_mm": 58.56354598252526,
+        "tip_deflection_mm": 0.1707546876171722,
+        "estimated_incremental_cost_CNY": 610.0,
+        "reliability_proxy_score": 64.7,
+        "manufacturing_complexity_score": 4.1,
+        "storage_ratio": 0.7998136323305236,
+        "max_intersection_mm2": 0.0,
+        "workspace_coverage": 1.0,
+        "reachable_fraction": 1.0,
+        "passed_screen": true,
+        "screen_reasons": [],
+        "parameters": {
+          "overlap_mm": 65.34050206952026
+        }
+      },
+      "final_repeatability": {
+        "id": "F12",
+        "samples": 20000,
+        "seed": 20261201,
+        "input_distribution": "independent rectangular clearance and seat errors",
+        "mean_mm": 0.33452607634789666,
+        "std_mm": 0.17360836355903558,
+        "p50_mm": 0.31519867247294675,
+        "p95_mm": 0.658304524412238,
+        "p99_mm": 0.7582874184052342,
+        "max_mm": 0.9084962326075816
+      }
+    }
+  ],
+  "candidate_front": [
+    {
+      "id": "F07",
+      "solution_index": 2,
+      "parameters": {
+        "lift_mm": 80.00004520634599,
+        "shift_x_mm": -0.0004690842754385277
+      },
+      "storage": 0.49271601027413076,
+      "error": 0.5179036790187178,
+      "deflection": 0.3192892857142857,
+      "reliability": -77.0,
+      "cost": 320.00021023688316,
+      "complexity": 2.0,
+      "family_group": "root",
+      "baseline_score": 0.1669930059593163,
+      "robust_frequency": 1.0,
+      "candidate_pareto": true,
+      "dense_validation": {
+        "states": 1001,
+        "max_intersection_mm2": 0.0,
+        "storage_ratio": 0.49271601027413076,
+        "passed_screen": true
+      }
+    },
+    {
+      "id": "F08",
+      "solution_index": 1,
+      "parameters": {
+        "lift_mm": 10.000019767593255,
+        "shift_x_mm": -30.000001769341992
+      },
+      "storage": 0.517503806252263,
+      "error": 0.6092209588551709,
+      "deflection": 0.3192892857142857,
+      "reliability": -74.3,
+      "cost": 337.0000105915334,
+      "complexity": 2.4,
+      "family_group": "root",
+      "baseline_score": 0.2544417739887544,
+      "robust_frequency": 1.0,
+      "candidate_pareto": false,
+      "dense_validation": {
+        "states": 1001,
+        "max_intersection_mm2": 0.0,
+        "storage_ratio": 0.517503806252263,
+        "passed_screen": true
+      }
+    },
+    {
+      "id": "F12",
+      "solution_index": 0,
+      "parameters": {
+        "overlap_mm": 65.34050206952026
+      },
+      "storage": 0.7998136323305236,
+      "error": 0.6265585158746263,
+      "deflection": 0.1707546876171722,
+      "reliability": -64.7,
+      "cost": 610.0,
+      "complexity": 4.1,
+      "family_group": "telescope",
+      "baseline_score": 0.4665895216224697,
+      "robust_frequency": 1.0,
+      "candidate_pareto": true,
+      "dense_validation": {
+        "states": 1001,
+        "max_intersection_mm2": 0.0,
+        "storage_ratio": 0.7998136323305236,
+        "passed_screen": true
+      }
+    },
+    {
+      "id": "SCZ",
+      "solution_index": 5,
+      "parameters": {
+        "arm_length_mm": 152.50555313625247,
+        "height_fold_mm": 45.000040083134806
+      },
+      "storage": 0.4703198142449614,
+      "error": 1.0372281198381885,
+      "deflection": 0.30711475086266393,
+      "reliability": -24.6,
+      "cost": 850.0,
+      "complexity": 4.8,
+      "family_group": "scissor",
+      "baseline_score": 0.7346311642465473,
+      "robust_frequency": 0.0,
+      "candidate_pareto": true
+    }
+  ]
+}
