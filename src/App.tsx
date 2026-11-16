@@ -17,15 +17,10 @@ import { REPO_BASE, SIM_BRANCH, CAD_BRANCH, CAD_COMMIT } from './data/evidence'
 function ChapterTracker() {
   const { setActiveChapter } = useApp()
   useEffect(() => {
-    const ob = new IntersectionObserver(entries => {
-      for (const en of entries) {
-        if (en.isIntersecting) setActiveChapter(en.target.id)
-      }
+    const ob = new IntersectionObserver(es => {
+      for (const en of es) if (en.isIntersecting) setActiveChapter(en.target.id)
     }, { rootMargin: '-30% 0px -60% 0px', threshold: 0 })
-    CHAPTERS.forEach(c => {
-      const el = document.getElementById(c.id)
-      if (el) ob.observe(el)
-    })
+    CHAPTERS.forEach(c => { const el = document.getElementById(c.id); if (el) ob.observe(el) })
     return () => ob.disconnect()
   }, [setActiveChapter])
   return null
@@ -47,11 +42,9 @@ function Shell() {
         <Ch8Pipeline />
       </main>
       <footer className="footer">
-        <div className="container">
-          <span>
-            数据与素材来源：{REPO_BASE} · 仿真分支 <span className="mono">{SIM_BRANCH}</span> · CAD 分支 <span className="mono">{CAD_BRANCH}</span> @ <span className="mono">{CAD_COMMIT.slice(0, 7)}</span>（R1-V6）
-          </span>
-          <span>全部证据文件与运动素材已本地打包，可离线演示。缩比模型不宣称完成整机性能验证。</span>
+        <div className="wrap">
+          <span>数据与素材：{REPO_BASE} · {SIM_BRANCH} · {CAD_BRANCH} @ {CAD_COMMIT.slice(0, 7)}（R1-V6）</span>
+          <span>证据文档与 CAD 资产已本地打包，可离线演示。缩比模型不宣称完成整机性能验证。</span>
         </div>
       </footer>
       <AutoplayBar />

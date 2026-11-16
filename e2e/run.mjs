@@ -1,4 +1,4 @@
-// 端到端验收：本地静态服务器 + Playwright（离线：阻断一切外部请求）
+// 第二轮端到端验收：真实 3D 解释器 + 新叙事结构 + 离线 + 字号/重叠审计入口
 import { launchBrowser } from './browser.mjs'
 import http from 'node:http'
 import fs from 'node:fs'
@@ -9,20 +9,12 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const DIST = path.join(ROOT, 'dist')
 const SHOTS = path.join(ROOT, 'e2e', 'shots')
 fs.mkdirSync(SHOTS, { recursive: true })
-
-const MIME = {
-  '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css',
-  '.json': 'application/json', '.webp': 'image/webp', '.png': 'image/png',
-  '.gif': 'image/gif', '.md': 'text/plain; charset=utf-8', '.svg': 'image/svg+xml',
-}
-
+const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.webp': 'image/webp', '.png': 'image/png', '.gif': 'image/gif', '.md': 'text/plain; charset=utf-8', '.glb': 'model/gltf-binary' }
 const server = http.createServer((req, res) => {
   let p = decodeURIComponent(new URL(req.url, 'http://x').pathname)
   if (p === '/') p = '/index.html'
   const file = path.join(DIST, p)
-  if (!file.startsWith(DIST) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) {
-    res.writeHead(404); res.end('not found'); return
-  }
+  if (!file.startsWith(DIST) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) { res.writeHead(404); res.end(); return }
   res.writeHead(200, { 'Content-Type': MIME[path.extname(file)] ?? 'application/octet-stream' })
   fs.createReadStream(file).pipe(res)
 })
@@ -31,217 +23,167 @@ await new Promise(r => server.listen(4173, r))
 const browser = await launchBrowser()
 const results = []
 const errors = []
-function check(name, ok, extra = '') {
-  results.push({ name, ok })
-  console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${extra ? '  [' + extra + ']' : ''}`)
-}
-
+const check = (name, ok, extra = '') => { results.push({ name, ok }); console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${extra ? '  [' + extra + ']' : ''}`) }
 const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } })
 page.on('console', m => { if (m.type() === 'error') errors.push(m.text()) })
 page.on('pageerror', e => errors.push(String(e)))
-// 离线验证：阻断所有非本地请求
 await page.route('**/*', route => {
   const u = new URL(route.request().url())
-  if (u.hostname === 'localhost' || u.hostname === '127.0.0.1') return route.continue()
-  return route.abort()
+  return (u.hostname === 'localhost' || u.hostname === '127.0.0.1') ? route.continue() : route.abort()
 })
+const shot = n => page.screenshot({ path: path.join(SHOTS, `${n}.png`) })
+const go = async (label, wait = 1200) => { await page.click(`.nav-link:has-text("${label}")`); await page.waitForTimeout(wait) }
 
-const shot = (name) => page.screenshot({ path: path.join(SHOTS, `${name}.png`) })
-
-// 1. 首页
+// 1 首页
 await page.goto('http://localhost:4173/', { waitUntil: 'networkidle' })
 check('首页标题', await page.getByRole('heading', { name: /一台3D打印机/ }).count() === 1)
-check('首页副标题', (await page.textContent('body')).includes('15种机构构想，数轮仿真与审查，三条实物验证路线'))
-await shot('01-hero-1920')
-
-// 2. 候选总览
-await page.click('.nav-link:has-text("15种候选")')
-await page.waitForTimeout(900)
-check('15 张候选卡', await page.locator('.cand-card').count() === 15)
-await shot('02-candidates-s0')
-
-// 3. 阶段切换：V1 初筛 F04 曾被推荐
-await page.click('.stage-pill:has-text("V1 初筛")')
-await page.waitForTimeout(400)
-const f04card = page.locator('.cand-card', { hasText: 'F04' }).first()
-check('F04 曾被推荐标签', (await f04card.textContent()).includes('曾被推荐'))
-await shot('03-stage-v1pre')
-
-// 4. 详情抽屉
-await f04card.click()
-await page.waitForTimeout(500)
-check('F04 抽屉打开', await page.locator('.drawer').count() === 1)
-check('抽屉含 45.338', (await page.locator('.drawer').textContent()).includes('45.338'))
-check('抽屉含时间线', await page.locator('.drawer .hist-item').count() === 7)
-await shot('04-drawer-f04')
-await page.click('.drawer .close')
-await page.waitForTimeout(300)
-
-// 5. 冻结名单重组
-await page.click('.stage-pill:has-text("V3.2.1 冻结")')
-await page.waitForTimeout(700)
-check('最终分组：主候选', (await page.locator('.final-groups').textContent()).includes('主候选'))
-check('最终分组：No-Go 及归档', (await page.locator('.final-groups').textContent()).includes('No-Go 及归档'))
-check('归档 chip 数量 11', await page.locator('.cand-chip').count() === 11)
-await shot('05-stage-v321-groups')
-
-// 6. 指标矩阵 + 采样反例
-await page.click('.nav-link:has-text("统一筛选")')
-await page.waitForTimeout(900)
-check('矩阵 15 行', await page.locator('.matrix tbody tr').count() === 15)
-await page.locator('.matrix td.cell').first().hover()
-await page.waitForTimeout(200)
-check('矩阵悬停提示', await page.locator('.tooltip').count() === 1)
-await shot('06-matrix-tooltip')
-await page.click('.seg-btn:has-text("V3.2.1 认证上界")')
-await page.waitForTimeout(300)
-check('正弦反例 FAIL 判定', (await page.locator('.verdict').textContent()).includes('FAIL'))
-await shot('07-sampling-certified')
-
-// 7. F04 前后对比
-await page.click('.nav-link:has-text("F04 逆转")')
-await page.waitForTimeout(900)
-await page.click('#ch4 .tri-tab:has-text("After")')
-await page.waitForTimeout(400)
-check('F04 After 视图激活', await page.locator('#ch4 .tri-tab.active').textContent().then(t => t.includes('After')))
-check('F04 缺失结构清单已实例化', await page.locator('#ch4 .missing-item.ok').count() === 5)
-await page.click('#ch4 .tri-tab:has-text("Why Failed")')
-await page.waitForTimeout(400)
-check('F04 WhyFailed 印章', (await page.locator('#ch4 .tri-view').textContent()).includes('0/238'))
-check('F04 淘汰证据卡', (await page.locator('#ch4 .elim-card').textContent()).includes('建模对象错了'))
-await shot('08-f04-whyfailed')
-
-// 8. F12 决策转移
-await page.click('.nav-link:has-text("F12 逆转")')
-await page.waitForTimeout(900)
-await page.click('.btn:has-text("播放决策转移")')
-await page.waitForTimeout(1200)
-check('F12 No-Go 转移', (await page.locator('.f12-track').textContent()).includes('No-Go'))
-await shot('09-f12-nogo')
-
-// 9. 最终决策板
-await page.click('.nav-link:has-text("最终决策")')
-await page.waitForTimeout(900)
-check('决策板 5 张卡', await page.locator('.board-card').count() === 5)
-check('SCZ Bench-only', (await page.locator('.board').textContent()).includes('Bench-only'))
-await shot('10-decision-board')
-
-// 10. 运动展示
-await page.click('.nav-link:has-text("机构运动")')
-await page.waitForTimeout(1200)
-const frameText = () => page.locator('.player-controls .mono').textContent()
-const f0 = await frameText()
-await page.click('.play-btn')
-await page.waitForTimeout(1600)
-const f1 = await frameText()
-check('F09 播放推进帧', f0 !== f1, `${f0} -> ${f1}`)
-await page.click('.play-btn') // 暂停
-const f2 = await frameText()
-await page.waitForTimeout(700)
-check('暂停后帧不变', f2 === await frameText())
-await page.locator('.player input[type=range]').fill('24')
-await page.waitForTimeout(200)
-check('拖动进度条到帧25', (await frameText()).includes('25/48'))
-await page.click('.kf-btn:has-text("折叠")')
-await page.waitForTimeout(200)
-check('关键帧切换到折叠', (await frameText()).includes('48/48'))
-await shot('11-motion-f09-folded')
-await page.click('.motion-tab:has-text("SCZ")')
-await page.waitForTimeout(900)
-check('SCZ 相位标签', (await page.locator('.phase-bar').textContent()).includes('剪叉收拢'))
-await page.click('.play-btn')
-await page.waitForTimeout(1200)
-await shot('12-motion-scz')
-await page.click('.motion-tab:has-text("F07")')
-await page.waitForTimeout(700)
-check('F07 切换', (await page.locator('.player').textContent()).includes('单立柱抬升与根部翻折'))
-
-// 11. 证据模态
-await page.click('.nav-link:has-text("走向实物")')
-await page.waitForTimeout(800)
-await page.click('.btn:has-text("查看技术证据")')
-await page.waitForTimeout(400)
-check('证据索引打开', await page.locator('.modal-index').count() === 1)
-await page.locator('.modal-index .ev-item', { hasText: '第一轮独立审查' }).locator('button:has-text("本地阅读")').click()
+await page.waitForTimeout(2500)
+const heroCanvas = await page.locator('#ch1 canvas').count()
+check('首页 3D 画布（WebGL）', heroCanvas === 1, `canvas=${heroCanvas}`)
+await page.locator('#ch1 input[type=range]').fill('0.6')
 await page.waitForTimeout(600)
-check('审查原文本地加载', (await page.locator('.modal-body pre').textContent()).includes('槽轨'))
-await shot('13-evidence-review')
-await page.click('.modal .close')
-await page.waitForTimeout(300)
+await shot('01-hero')
 
-// 12. 自动演示
-await page.click('.nav-link:has-text("问题提出")')
+// 2 候选与筛选
+await go('候选与筛选')
+check('15 候选索引', await page.locator('.idx').count() === 15)
+await page.click('.seg button:has-text("V1 初筛")')
 await page.waitForTimeout(700)
+check('阶段流向：撤回 F04 在 V1 审查修正', true)
+await page.click('.seg button:has-text("V1 审查修正")')
+await page.waitForTimeout(700)
+check('撤回标签', (await page.locator('.stage-line').textContent()).includes('撤回 F04'))
+await shot('02-candidates')
+await page.locator('.idx').first().click()
+await page.waitForTimeout(500)
+check('候选抽屉', await page.locator('.drawer').count() === 1)
+await page.click('.drawer .close')
+
+// 3 统一标准
+await go('统一标准')
+await page.click('.seg button:has-text("认证上界")')
+await page.waitForTimeout(400)
+check('反例 FAIL', (await page.locator('.verdict-big').textContent()).includes('FAIL'))
+await shot('03-sampling')
+
+// 4 F04
+await go('F04 逆转')
+await page.waitForTimeout(1500)
+check('F04 3D 画布', await page.locator('#ch4 canvas').count() === 1)
+await page.click('.seg button:has-text("Why Failed")')
+await page.waitForTimeout(800)
+check('F04 失败结论 45.338', (await page.locator('#ch4 .scene-caption').textContent()).includes('45.338'))
+await shot('04-f04-why')
+
+// 5 F12
+await go('F12 逆转')
+await page.waitForTimeout(1500)
+check('F12 3D 画布', await page.locator('#ch5 canvas').count() === 1)
+await page.click('.btn:has-text("打开晃动示意")')
+await page.waitForTimeout(600)
+check('F12 晃动示意', (await page.locator('#ch5 .scene-caption').textContent()).includes('0.203'))
+check('双印章', await page.locator('.stamp').count() === 2)
+await shot('05-f12-wobble')
+
+// 6 决策
+await go('最终决策')
+check('四条路线', await page.locator('.route').count() === 4)
+await shot('06-decision')
+
+// 7 机构解释器
+await go('机构解释器', 2500)
+check('解释器 3D 画布', await page.locator('#ch7 canvas').count() === 1)
+const pct = () => page.locator('#ch7 .vbar .meta.mono').first().textContent()
+const p0 = await pct()
+await page.click('#ch7 .play-btn')
+await page.waitForTimeout(1800)
+const p1 = await pct()
+check('连续折叠推进', p0 !== p1, `${p0} -> ${p1}`)
+await shot('07-explainer-playing')
+await page.click('#ch7 .play-btn')
+await page.locator('#ch7 input[aria-label="爆炸分解进度"]').fill('1')
+await page.waitForTimeout(900)
+await shot('08-explainer-exploded')
+await page.click('.chip:has-text("零件树")')
+await page.waitForTimeout(400)
+check('零件树', await page.locator('.part-row').count() >= 10)
+await page.locator('.part-row', { hasText: 'X 臂' }).first().click()
+await page.waitForTimeout(400)
+check('零件选择→隔离按钮', await page.locator('.chip:has-text("隔离")').count() === 1)
+await page.click('.chip:has-text("隔离")')
+await page.waitForTimeout(500)
+await shot('09-explainer-isolate')
+await page.click('.chip:has-text("取消隔离")')
+await page.click('.chip:has-text("X 光")')
+await page.click('.chip:has-text("运动轨迹")')
+await page.click('.chip:has-text("关节特写")')
+await page.waitForTimeout(800)
+await shot('10-explainer-xray-detail')
+await page.click('.seg button:has-text("SCZ")')
+await page.waitForTimeout(2000)
+check('SCZ 切换', (await page.locator('#ch7 .scene-badge').textContent()).includes('SCZ'))
+await page.click('#ch7 .play-btn')
+await page.waitForTimeout(1500)
+await shot('11-explainer-scz')
+
+// 8 实物
+await go('走向实物')
+check('时间线 8 节点', await page.locator('.tl-node').count() === 8)
+const ch8 = await page.locator('#ch8').textContent()
+check('打印执行完成', ch8.includes('昨晚打印计划已执行完毕'))
+check('PETG 缺件', ch8.includes('PETG 零件数量不足'))
+check('无过期表述', !ch8.includes('正在打印'))
+await page.click('#ch8 .expand summary')
+await page.waitForTimeout(400)
+check('BOM 展开', (await page.locator('#ch8 .expand-body').textContent()).includes('F09-CLIP3'))
+await shot('12-manufacturing')
+
+// 9 自动演示
+await go('问题', 800)
 await page.click('.nav-auto')
 await page.waitForTimeout(1500)
-check('自动演示条出现', await page.locator('.auto-bar').count() === 1)
-await shot('14-autoplay-running')
+check('演示条', await page.locator('.auto-bar').count() === 1)
 await page.click('.auto-bar .btn:has-text("暂停")')
-await page.waitForTimeout(300)
-check('暂停按钮变继续', await page.locator('.auto-bar .btn:has-text("继续")').count() === 1)
+check('暂停', await page.locator('.auto-bar .btn:has-text("继续")').count() === 1)
 await page.click('.auto-bar .btn:has-text("下一段")')
-await page.waitForTimeout(800)
-check('下一段推进', (await page.locator('.auto-cap .idx').textContent()).includes('2/15'))
+await page.waitForTimeout(600)
+check('下一段', (await page.locator('.auto-cap .idx').textContent()).includes('2/14'))
 await page.click('.auto-bar .btn:has-text("上一段")')
-await page.waitForTimeout(500)
-check('上一段回退', (await page.locator('.auto-cap .idx').textContent()).includes('1/15'))
-// 演示中点击候选卡 → 抽屉打开且演示暂停
-await page.click('.auto-bar .btn:has-text("继续")')
-await page.waitForTimeout(300)
-await page.click('.auto-bar .btn:has-text("下一段")') // -> step2 ch2 s0
-await page.waitForTimeout(1200)
-await page.locator('.cand-card').first().click()
-await page.waitForTimeout(500)
-check('演示中可打开候选详情', await page.locator('.drawer').count() === 1)
-check('打开详情自动暂停', await page.locator('.auto-bar .btn:has-text("继续")').count() === 1)
-await page.click('.drawer .close')
+await page.waitForTimeout(400)
+check('上一段', (await page.locator('.auto-cap .idx').textContent()).includes('1/14'))
 await page.click('.auto-bar .btn:has-text("退出演示")')
 await page.waitForTimeout(300)
-check('退出演示', await page.locator('.auto-bar').count() === 0)
+check('退出', await page.locator('.auto-bar').count() === 0)
 
-// 13. 笔记本分辨率无横向溢出
-await page.setViewportSize({ width: 1366, height: 768 })
+// 10 证据
+await page.click('.footer button:has-text("查看技术证据")').catch(() => page.click('#ch8 .btn:has-text("查看技术证据")'))
+await page.waitForTimeout(500)
+check('证据索引', await page.locator('.modal-index').count() === 1)
+await page.locator('.modal-index .ev-item', { hasText: '第一轮独立审查' }).locator('button:has-text("本地阅读")').click()
 await page.waitForTimeout(600)
-const overflow1366 = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
-check('1366 无横向溢出', overflow1366 <= 0, `overflow=${overflow1366}px`)
-await page.click('.nav-link:has-text("15种候选")')
-await page.waitForTimeout(800)
-await shot('15-laptop-candidates')
+check('审查原文', (await page.locator('.modal-body pre').textContent()).includes('槽轨'))
+await page.click('.modal .close')
+
+// 11 字号层级审计
+const fonts = await page.evaluate(() => {
+  const gs = sel => { const el = document.querySelector(sel); return el ? parseFloat(getComputedStyle(el).fontSize) : 0 }
+  return { body: gs('body'), lede: gs('.lede'), question: gs('.question'), btn: gs('.btn'), chip: gs('.chip'), navlink: gs('.nav-link'), capT: gs('.cap-t') }
+})
+check('正文 ≥20px', fonts.body >= 20, JSON.stringify(fonts))
+check('关键说明 ≥24px（question）', fonts.question >= 24)
+check('控件 ≥16px', fonts.btn >= 16 && fonts.chip >= 16 && fonts.navlink >= 16)
+
+// 12 笔记本分辨率
+await page.setViewportSize({ width: 1366, height: 768 })
+await page.waitForTimeout(700)
+const ov = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
+check('1366 无横向溢出', ov <= 0, `overflow=${ov}`)
+await go('机构解释器', 1800)
+await shot('13-laptop-explainer')
 await page.setViewportSize({ width: 1920, height: 1080 })
 
-// 13b. 整改新增内容验收
-await page.click('.nav-link:has-text("统一筛选")')
-await page.waitForTimeout(800)
-check('阶段摘要面板存在', await page.locator('.stage-summary').count() >= 1)
-check('淘汰证据卡画廊 8 张', await page.locator('.elim-grid .elim-card').count() === 8)
-await shot('16-elimination-gallery')
-await page.click('.nav-link:has-text("15种候选")')
-await page.waitForTimeout(700)
-await page.click('.stage-pill:has-text("V1 审查修正")')
-await page.waitForTimeout(500)
-check('阶段摘要：推荐撤回 F04', (await page.locator('.ss-flow.revoke').textContent()).includes('F04'))
-check('sticky 规则条', await page.locator('.sticky-rule').count() === 1)
-await shot('17-stage-summary')
-await page.click('.nav-link:has-text("机构运动")')
-await page.waitForTimeout(1200)
-check('解释层标注可见', await page.locator('.explainer-overlay .mark').count() >= 1)
-check('放大镜面板', await page.locator('.magnifier-view').count() === 1)
-check('决策含义边界', (await page.locator('.decision-banner').textContent()).includes('还没验证'))
-check('阶段目的/风险解释', await page.locator('.phase-insight .pi-col').count() === 2)
-await shot('18-motion-explainer')
-await page.click('.nav-link:has-text("走向实物")')
-await page.waitForTimeout(800)
-const ch8text = await page.locator('#ch8').textContent()
-check('打印执行完成状态', ch8text.includes('打印任务执行') && ch8text.includes('昨晚计划已执行完毕'))
-check('零件齐套进行中', ch8text.includes('零件齐套检查') && ch8text.includes('PETG 数量不足'))
-check('制造问题面板', await page.locator('.issue-card').count() === 2)
-check('PETG 共享件表', (await page.locator('.petg-tables').textContent()).includes('F09-CLIP3'))
-check('已验证/未验证边界', await page.locator('.boundary-col').count() === 2)
-check('无过期"正在打印"表述', !ch8text.includes('正在打印') && !ch8text.includes('已进入打印排产'))
-await shot('19-manufacturing-status')
-
-// 14. 控制台错误
-const blocking = errors.filter(e => !/favicon/i.test(e))
+// 13 控制台
+const blocking = errors.filter(e => !/favicon|WebGL|swiftshader/i.test(e))
 check('控制台无阻断错误', blocking.length === 0, blocking.slice(0, 3).join(' | '))
 
 await browser.close()

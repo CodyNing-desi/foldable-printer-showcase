@@ -1,220 +1,176 @@
 import { useEffect, useRef, useState } from 'react'
 import { MOTIONS, phaseAt, phaseIndex } from '../data/motion'
-import type { MotionSpec } from '../data/motion'
-import { useApp, assetUrl } from '../state'
-import { ExplainerOverlay, Magnifier, PhaseInsight, DecisionBanner } from '../components/MotionExplainer'
-import { Icon } from '../components/Icons'
+import { useApp } from '../state'
+import { MechanismViewer, webglAvailable } from '../three/MechanismViewer'
+import type { ViewerCtrl as VCtrl } from '../three/MechanismViewer'
+import { FramePlayer } from '../components/FramePlayer'
+import { partLabel } from '../data/viewer'
+import type { CamPreset } from '../data/viewer'
+import { EV_BY_ID } from '../data/evidence'
 
-interface Manifest { [mech: string]: { n_frames: number; size: number[]; frames: { file: string; t: number; delay_ms: number }[] } }
+const STROKE_SECONDS = 5.76 // 与原 GIF 48帧×120ms 一致
 
 export function Ch7Motion() {
-  const { motionTab, setMotionTab, openEvidence } = useApp()
-  const [manifest, setManifest] = useState<Manifest | null>(null)
-
-  useEffect(() => {
-    fetch(assetUrl('assets/motion_manifest.json'))
-      .then(r => r.json())
-      .then(setManifest)
-      .catch(() => setManifest(null))
-  }, [])
-
+  const { motionTab, setMotionTab, ctrl, setCtrl, openEvidence, reduced } = useApp()
+  const [fallback, setFallback] = useState(!webglAvailable())
+  const [treeOpen, setTreeOpen] = useState(false)
+  const [instances, setInstances] = useState<string[]>([])
   const spec = MOTIONS.find(m => m.id === motionTab) ?? MOTIONS[0]
-
-  return (
-    <section className="chapter" id="ch7">
-      <div className="container">
-        <div className="ch-kicker">CHAPTER 07 · 最终机构运动展示</div>
-        <h2 className="ch-title">不只是"它在动"——每一步为什么这么动</h2>
-        <p className="ch-lead">
-          动画全部来自仓库 <strong>round1-demo-cad @ d35cbd1</strong> 的真实渲染帧（48 帧 · 640×500 · 120 ms/帧）。
-          解释层标出当前阶段的关键关节、运动目的与风险点；放大镜裁切真实帧局部；每条路线附"已验证 / 未验证"边界。
-        </p>
-
-        <div className="motion-tabs" role="tablist" aria-label="方案切换">
-          {MOTIONS.map(m => (
-            <button key={m.id} role="tab" aria-selected={motionTab === m.id}
-              className={`motion-tab ${motionTab === m.id ? 'active' : ''}`}
-              onClick={() => setMotionTab(m.id)}>
-              {m.tab}
-            </button>
-          ))}
-        </div>
-
-        {manifest && manifest[spec.id] ? (
-          <MotionView key={spec.id} spec={spec} frames={manifest[spec.id].frames} />
-        ) : (
-          <p className="muted">素材加载中…（若持续失败，请确认通过本地服务器打开构建版本）</p>
-        )}
-
-        <div className="disclaimer" style={{ marginTop: 24 }}>
-          <b>重要技术声明：</b>R1-V6 是缩比（1:2）机械原理演示模型，不是整机性能验证件。
-          F09 采用刚性同步杆简化原始双丝杆/同步带机构；SCZ 采用手动固定端与滑动端剪叉（与仿真对称丝杆驱动不同）。
-          本网站不宣称这些缩比模型已完成原方案的电机驱动、载荷、回差或寿命验证。
-          L2 为 2001 步密集采样 + 凸包保守检查，非连续碰撞认证；L4 打印试件待现场确认。
-          <div style={{ marginTop: 8, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <button className="ev-link" onClick={() => openEvidence('cadlimits')}>模型限制声明</button>
-            <button className="ev-link" onClick={() => openEvidence('cadmotion')}>运动与装配验证报告</button>
-            <button className="ev-link" onClick={() => openEvidence('cadchangelog')}>V5→V6 变更表</button>
-          </div>
-        </div>
-      </div>
-    </section>
-  )
-}
-
-function MotionView({ spec, frames }: { spec: MotionSpec; frames: { file: string; t: number; delay_ms: number }[] }) {
-  const { playToken, reduced } = useApp()
-  const [frame, setFrame] = useState(0)
-  const [playing, setPlaying] = useState(false)
-  const [ready, setReady] = useState(false)
-  const [overlay, setOverlay] = useState(true)
-  const frameRef = useRef(frame)
-  frameRef.current = frame
-  const n = frames.length
+  const ctrlRef = useRef(ctrl)
+  ctrlRef.current = ctrl
 
   useEffect(() => {
-    let alive = true
-    let loaded = 0
-    frames.forEach(f => {
-      const img = new Image()
-      img.onload = img.onerror = () => {
-        loaded++
-        if (alive && loaded >= Math.min(8, frames.length)) setReady(true)
-      }
-      img.src = assetUrl(f.file)
-    })
-    return () => { alive = false }
-  }, [frames])
+    fetch(`${import.meta.env.BASE_URL}models/${motionTab}/manifest.json`).then(r => r.json()).then(m => setInstances(m.instances)).catch(() => setInstances([]))
+  }, [motionTab])
 
   useEffect(() => {
-    if (playToken > 0) {
-      if (frameRef.current >= n - 1) setFrame(0)
-      setPlaying(true)
-    }
+    setCtrl({ t: 0, playing: false, explode: 0, xray: false, isolate: null, selectedPart: null, traces: false, preset: 'iso', presetToken: ctrl.presetToken + 1 })
+    setFallback(!webglAvailable())
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [playToken])
+  }, [motionTab])
 
+  // 连续播放：推进真实运动学轨道参数 t
   useEffect(() => {
-    if (!playing || !ready) return
-    let raf = 0
-    let last = performance.now()
-    let acc = 0
+    if (!ctrl.playing || fallback) return
+    let raf = 0, last = performance.now()
     const loop = (now: number) => {
-      acc += now - last
-      last = now
-      const delay = frames[frameRef.current]?.delay_ms ?? 120
-      if (acc >= delay) {
-        acc = 0
-        if (frameRef.current >= n - 1) {
-          setPlaying(false)
-          return
-        }
-        setFrame(f => Math.min(n - 1, f + 1))
-      }
+      const dt = (now - last) / 1000; last = now
+      const nt = ctrlRef.current.t + dt / STROKE_SECONDS
+      if (nt >= 1) { setCtrl({ t: 1, playing: false }); return }
+      setCtrl({ t: nt })
       raf = requestAnimationFrame(loop)
     }
     raf = requestAnimationFrame(loop)
     return () => cancelAnimationFrame(raf)
-  }, [playing, ready, frames, n])
+  }, [ctrl.playing, fallback, setCtrl])
 
-  const t = frames[frame]?.t ?? 0
-  const phase = phaseAt(spec, t)
-  const pIdx = phaseIndex(spec, t)
-  const toggle = () => {
-    if (!playing && frame >= n - 1) setFrame(0)
-    setPlaying(p => !p)
+  const pIdx = phaseIndex(spec, ctrl.t)
+  const phase = phaseAt(spec, ctrl.t)
+  const viewerCtrl: VCtrl = {
+    t: ctrl.t, explode: ctrl.explode, xray: ctrl.xray, isolate: ctrl.isolate,
+    selected: ctrl.selectedPart, traces: ctrl.traces, labels: ctrl.labels,
+    preset: ctrl.preset, presetToken: ctrl.presetToken,
   }
-  const replay = () => { setFrame(0); setPlaying(true) }
-  const jump = (tt: number) => {
-    setPlaying(false)
-    setFrame(Math.round(tt * (n - 1)))
-  }
+  const presets: { id: CamPreset; label: string }[] = [
+    { id: 'iso', label: '等轴' }, { id: 'front', label: '正视' }, { id: 'side', label: '侧视' },
+    { id: 'top', label: '顶视' }, { id: 'detail', label: '关节特写' },
+  ]
 
   return (
-    <div className="motion-grid">
-      <div className="player">
-        <div className="player-head">
-          <div>
-            <div style={{ fontSize: 15, fontWeight: 700 }}>{spec.title}</div>
-            <div className="tiny muted">{spec.subtitle}</div>
-          </div>
-          <button className={`btn sm ${overlay ? 'primary' : 'ghost'}`} onClick={() => setOverlay(o => !o)} aria-pressed={overlay}>
-            <Icon name="eye" size={13} /> 解释层 {overlay ? '开' : '关'}
-          </button>
-        </div>
-        <div className="screen">
-          <img src={assetUrl(frames[frame].file)} alt={`${spec.title} 帧 ${frame + 1}/${n}，t=${t.toFixed(2)}`} />
-          {overlay && ready && <ExplainerOverlay spec={spec} phaseIdx={pIdx} />}
-          {!ready && <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#333' }}>帧加载中…</div>}
-        </div>
-        <div className="player-controls">
-          <button className="play-btn" onClick={toggle} aria-label={playing ? '暂停' : '播放'}>{playing ? '❚❚' : '▶'}</button>
-          <button className="btn sm" onClick={replay}>↺ 重新播放</button>
-          <input
-            type="range" min={0} max={n - 1} step={1} value={frame}
-            onChange={e => { setPlaying(false); setFrame(Number(e.target.value)) }}
-            aria-label="运动进度（逐帧拖动）"
-          />
-          <span className="mono tiny muted" style={{ minWidth: 110, textAlign: 'right' }}>
-            帧 {String(frame + 1).padStart(2, '0')}/{n} · t={t.toFixed(2)}
-          </span>
-        </div>
-        <div className="phase-bar" aria-hidden="true">
-          {spec.phases.map((p, i) => (
-            <div key={p.label + p.from}
-              className={`phase-seg ${i === pIdx ? 'on' : ''}`}
-              style={{ width: `${(p.to - p.from) * 100}%` }}>
-              {(p.to - p.from) >= 0.12 ? p.label : ''}
-            </div>
-          ))}
-        </div>
-        <div className="phase-detail">
-          <b>当前阶段：{phase.label}</b> · {phase.detail}
-        </div>
-        <PhaseInsight spec={spec} phaseIdx={pIdx} />
-        <div className="keyframes">
-          {spec.keyframes.map(k => (
-            <button key={k.name}
-              className={`kf-btn ${Math.abs(t - k.t) < 0.03 ? 'active' : ''}`}
-              onClick={() => jump(k.t)}>
-              {k.name} t={k.t.toFixed(2)}
-            </button>
-          ))}
-        </div>
-        <div className="kf-strip">
-          {spec.keyframes.map(k => (
-            <button key={k.name} className={Math.abs(t - k.t) < 0.03 ? 'active' : ''} onClick={() => jump(k.t)} aria-label={`关键帧 ${k.name}`}>
-              <img src={assetUrl(k.file)} alt={`${spec.id} ${k.name}姿态截图`} />
-              <span className="cap">{k.name}</span>
-            </button>
-          ))}
-        </div>
-      </div>
+    <section className="chapter" id="ch7">
+      <div className="wrap">
+        <div className="kicker">CHAPTER 07 · 机构解释器</div>
+        <h2 className="question">让机械自己解释机械</h2>
+        <p className="lede">
+          真实 R1-V6 CAD 装配（逐件 STL → GLB，零件树保留），运动由原仓库 <b>kinematics_r1.py</b> 权威运动学采样驱动。
+          旋转、点选零件、隔离、X 光、分阶段爆炸——所有操作不改变运动状态。
+        </p>
 
-      <div className="motion-side">
-        <DecisionBanner spec={spec} />
-        <Magnifier spec={spec} phaseIdx={pIdx} frameFile={frames[frame].file} />
-        <div className="panel" style={{ marginTop: 14 }}>
-          <h3>台架关注点</h3>
-          <ul className="focus-list">
-            {spec.focus.map((f, i) => <li key={i}>{f}</li>)}
-          </ul>
+        <div className="seg" role="tablist" aria-label="方案切换" style={{ marginBottom: 20 }}>
+          {MOTIONS.map(m => (
+            <button key={m.id} role="tab" aria-selected={motionTab === m.id} className={motionTab === m.id ? 'on' : ''} onClick={() => setMotionTab(m.id)}>{m.tab}</button>
+          ))}
         </div>
-        <div className="panel" style={{ marginTop: 14 }}>
-          <h3>CAD 级验证（R1-V6）</h3>
-          <div className="val-list">
-            {spec.validation.map((v, i) => (
-              <div className="val-item" key={i}><span className="l">{v.label}</span><span className="mono">{v.value}</span></div>
-            ))}
+
+        <div className="scene">
+          <div className="scene-canvas">
+            <span className="scene-badge">{spec.title} · 缩比 1:2 · {fallback ? '原始帧回退' : '真实 CAD 三维装配'}</span>
+            {fallback ? (
+              <FramePlayer cand={motionTab} />
+            ) : (
+              <MechanismViewer cand={motionTab} ctrl={viewerCtrl} onSelect={pid => setCtrl({ selectedPart: pid })} onFallback={() => setFallback(true)} className="viewer-fill" />
+            )}
+            {!fallback && (
+              <div className="scene-caption">
+                <div className="cap-t">{phase.label} · {Math.round(ctrl.t * 100)}%</div>
+                <div className="cap-d">{phase.purpose}｜风险：{phase.risk}</div>
+              </div>
+            )}
+            {!fallback && treeOpen && (
+              <div className="part-panel">
+                <h4>零件树（{instances.length} 实例）</h4>
+                {instances.map(pid => (
+                  <button key={pid} className={`part-row ${ctrl.selectedPart === pid ? 'sel' : ''}`} onClick={() => setCtrl({ selectedPart: ctrl.selectedPart === pid ? null : pid })}>
+                    <span className="dot" />{partLabel(pid)}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
-          <p className="tiny muted" style={{ margin: '10px 0 0' }}>CAD 检查 ≠ 真实打印测试；装配与载荷结果待实物回填。</p>
+
+          <div className="vbar">
+            <button className="play-btn" aria-label={ctrl.playing ? '暂停' : '播放'} onClick={() => { if (!ctrl.playing && ctrl.t >= 1) setCtrl({ t: 0 }); setCtrl({ playing: !ctrl.playing }) }}>{ctrl.playing ? '❚❚' : '▶'}</button>
+            <button className="btn sm" onClick={() => setCtrl({ t: 0, playing: true })}>↺ 重播</button>
+            <input type="range" min={0} max={1} step={0.002} value={ctrl.t} onChange={e => setCtrl({ t: Number(e.target.value), playing: false })} aria-label="折叠进度" />
+            <span className="meta mono" style={{ minWidth: 64 }}>{Math.round(ctrl.t * 100)}%</span>
+            <div className="phasebar grow" style={{ flex: 2 }}>
+              {spec.phases.map((p, i) => (
+                <button key={i} className={i === pIdx ? 'on' : ''} style={{ width: `${(p.to - p.from) * 100}%` }} onClick={() => setCtrl({ t: p.from + 0.001, playing: false })} title={p.detail}>
+                  {(p.to - p.from) >= 0.12 ? p.label : ''}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="vtools">
+            {presets.map(p => (
+              <button key={p.id} className={`chip ${ctrl.preset === p.id ? 'on' : ''}`} onClick={() => setCtrl({ preset: p.id, presetToken: ctrl.presetToken + 1 })}>{p.label}</button>
+            ))}
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10, minWidth: 220 }}>
+              <span className="meta">爆炸</span>
+              <input type="range" min={0} max={1} step={0.01} value={ctrl.explode} onChange={e => setCtrl({ explode: Number(e.target.value), playing: false })} aria-label="爆炸分解进度" />
+            </span>
+            <button className={`chip ${ctrl.traces ? 'on' : ''}`} onClick={() => setCtrl({ traces: !ctrl.traces })}>运动轨迹</button>
+            <button className={`chip ${ctrl.labels ? 'on' : ''}`} onClick={() => setCtrl({ labels: !ctrl.labels })}>关节标注</button>
+            <button className={`chip ${ctrl.xray ? 'on' : ''}`} onClick={() => setCtrl({ xray: !ctrl.xray })}>X 光</button>
+            <button className={`chip ${treeOpen ? 'on' : ''}`} onClick={() => setTreeOpen(o => !o)}>零件树</button>
+            {ctrl.selectedPart && (
+              <>
+                <button className={`chip ${ctrl.isolate === ctrl.selectedPart ? 'on danger' : ''}`} onClick={() => setCtrl({ isolate: ctrl.isolate === ctrl.selectedPart ? null : ctrl.selectedPart })}>
+                  {ctrl.isolate === ctrl.selectedPart ? '取消隔离' : `隔离 ${partLabel(ctrl.selectedPart)}`}
+                </button>
+                <button className="chip" onClick={() => setCtrl({ selectedPart: null, isolate: null })}>清除选择</button>
+              </>
+            )}
+          </div>
         </div>
-        <div className="panel" style={{ marginTop: 14 }}>
-          <h3>运动简图（仓库素材）</h3>
-          <img src={assetUrl(`assets/${spec.id}/joint_schematic.png`)} alt={`${spec.id} 关节运动简图`} style={{ width: '100%', borderRadius: 8, background: '#fff' }} />
-        </div>
-        <div className="disclaimer"><b>本方案简化：</b>{spec.disclaimer}</div>
+
+        <p className="verdict-line blue" style={{ marginTop: 26 }}>
+          {spec.decision.role}——{spec.decision.why}
+        </p>
+
+        <details className="expand">
+          <summary>查看证据：当前模型已验证 / 未验证 · 简化声明 · CAD 验证数据</summary>
+          <div className="expand-body">
+            <div className="boundary-grid" style={{ margin: '8px 0 16px' }}>
+              <div className="boundary-col ok">
+                <h3>已验证（CAD 级）</h3>
+                <ul>{spec.decision.verified.map((v, i) => <li key={i}>{v}</li>)}</ul>
+              </div>
+              <div className="boundary-col todo">
+                <h3>未验证 · 必须实物回答</h3>
+                <ul>{spec.decision.notVerified.map((v, i) => <li key={i}>{v}</li>)}</ul>
+              </div>
+            </div>
+            <p style={{ marginBottom: 12 }}><b>本方案简化声明：</b>{spec.disclaimer}</p>
+            <table>
+              <tbody>
+                {spec.validation.map((v, i) => <tr key={i}><td>{v.label}</td><td className="num">{v.value}</td></tr>)}
+              </tbody>
+            </table>
+            <div className="evidence-row">
+              {['cadmotion', 'cadlimits', 'cadchangelog'].map(id => (
+                <button key={id} className="btn sm ghost" onClick={() => openEvidence(id)}>{EV_BY_ID[id].title}</button>
+              ))}
+            </div>
+            <p className="meta" style={{ marginTop: 12 }}>
+              运动映射：scripts/export_cad.py 对原仓库 validate_r1.placements() 密集采样（161 步）生成变换轨道，浏览器端仅插值；
+              关键姿态真值见 public/models/&lt;方案&gt;/keyposes.json。销/卡圈为紧固件，与原渲染器口径一致不进入运行时网格。
+              {reduced && '（已按系统设置减少动效。）'}
+            </p>
+          </div>
+        </details>
       </div>
-    </div>
+    </section>
   )
 }

@@ -24,12 +24,12 @@ function cachedExecutables() {
 
 export async function launchBrowser() {
   try {
-    return await chromium.launch({ args: ['--no-sandbox'] })
+    return await chromium.launch({ args: ['--no-sandbox', '--enable-unsafe-swiftshader', '--use-angle=swiftshader'] })
   } catch (e) {
     const candidates = [process.env.CHROME_PATH, ...cachedExecutables()].filter(Boolean)
     for (const exe of candidates) {
       try {
-        return await chromium.launch({ executablePath: exe, args: ['--no-sandbox'] })
+        return await chromium.launch({ executablePath: exe, args: ['--no-sandbox', '--enable-unsafe-swiftshader', '--use-angle=swiftshader'] })
       } catch { /* try next */ }
     }
     throw new Error(

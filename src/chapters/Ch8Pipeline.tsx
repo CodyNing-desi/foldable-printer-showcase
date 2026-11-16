@@ -1,60 +1,84 @@
+import { MFG_LADDER, MFG_ISSUES, PETG_SHARED, PETG_SCZ } from '../data/manufacturing'
 import { useApp } from '../state'
-import { ManufacturingLadder, ManufacturingIssues, VerificationBoundary } from '../components/ManufacturingPanel'
-import { Icon } from '../components/Icons'
-
-const FIXES = [
-  { tag: 'P0-1', title: 'F09 中央 X 臂真实铰接', body: 'V5 臂悬空于 y=0，仅动画对齐；V6 零件级 CAD：中横梁 BRG 抬高并加中央叉耳，X 臂物理铰接。', ev: 'L2b 闭合径向/轴线误差 ~0；孔轴审计 BRG/ARM 孔存在' },
-  { tag: 'P0-2', title: 'SCZ 顶横轴随顶滑块', body: 'V5 顶横轴 SHT 置于固定 fix_x，不穿过顶滑块；V6 改随 sx 移动，复审整条剪叉运动链。', ev: 'L2b sht_slt 刚体相对位姿不变、导路偏移 ~0' },
-  { tag: 'P0-3', title: '装配约束闭合检查', body: 'V5 只有"2001 步无穿透"；V6 新增 L2b：连接一致/轴线共线/销孔接口/导路保持/刚体位姿/全行程闭合 + CAD 孔轴审计。', ev: '各方案闭合失败 0、孔缺失 0、销孔合格' },
-  { tag: '附加', title: 'F08 L 槽相位顺序化', body: 'V5 抬升与后移相位重叠致根销对角卡滞；V6 改抬升 0.20–0.40 → 后移 0.40–0.55 → 后翻 0.55–0.95。', ev: 'L2b root_slot 路径偏移 ~0' },
-]
 
 export function Ch8Pipeline() {
   const { scrollTo, setStage, startAuto, openEvidence } = useApp()
 
   return (
     <section className="chapter" id="ch8">
-      <div className="container">
-        <div className="ch-kicker">CHAPTER 08 · 从仿真走向实物</div>
-        <h2 className="ch-title">打印执行完了，但制造问题没有结束</h2>
-        <p className="ch-lead">
-          昨晚打印计划已执行完毕——但<strong>打印执行完成 ≠ 零件齐套 ≠ 装配完成 ≠ 实验完成</strong>。
-          现场盘点发现 PETG 零件数量不足等实际制造问题。这一章把执行状态拆开，把问题摆上桌。
-        </p>
+      <div className="wrap">
+        <div className="kicker">CHAPTER 08 · 走向实物</div>
+        <h2 className="question">打印执行完了，制造问题没有结束</h2>
+        <p className="lede">昨晚打印计划已执行完毕。但<b>打印执行完成 ≠ 零件齐套 ≠ 装配完成 ≠ 实验完成</b>。现场盘点：PETG 零件数量不足。</p>
 
-        <ManufacturingLadder />
-
-        <div className="ch8-split">
-          <ManufacturingIssues />
-          <div>
-            <h3 style={{ fontSize: 18, margin: '0 0 14px' }}>V5 独立审查 → V6 修复（保留问题记录，不删除失败版本）</h3>
-            <div className="fix-grid">
-              {FIXES.map(f => (
-                <div className="fix-card" key={f.tag}>
-                  <span className="tag">{f.tag}</span>
-                  <h4>{f.title}</h4>
-                  <p>{f.body}</p>
-                  <span className="ev">证据：{f.ev}</span>
-                </div>
-              ))}
+        <div className="timeline">
+          {MFG_LADDER.map((s, i) => (
+            <div key={s.label} className={`tl-node ${s.state}`}>
+              <div className="tl-dot">{s.state === 'done' ? '✓' : i + 1}</div>
+              <div className="tl-body">
+                <b>{s.label}</b>
+                <span className={`tl-state ${s.state}`}>{s.state === 'done' ? '完成' : s.state === 'active' ? '进行中' : '待执行'}</span>
+                <p>{s.note}</p>
+              </div>
             </div>
-            <div style={{ marginTop: 14, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <button className="ev-link" onClick={() => openEvidence('cadchangelog')}>CHANGELOG_V5_V6.md</button>
-              <button className="ev-link" onClick={() => openEvidence('cadmotion')}>MOTION_VALIDATION_REPORT.md</button>
-            </div>
-          </div>
+          ))}
         </div>
 
-        <h3 style={{ fontSize: 18, margin: '30px 0 14px' }}><Icon name="eye" size={16} /> 当前模型已验证 / 未验证的清晰边界</h3>
-        <VerificationBoundary />
+        <div className="issue-block">
+          <h3>⚠ PETG 零件数量不足</h3>
+          <p>BOM 口径 PETG 共 23 项 / 133 件。跨方案共享销/卡圈影响全部路线；SCZ 专属件最多（44 件）。具体缺口待齐套核查回填；对策（补打 / 改排产 / 金属销与 E 卡圈外购评估）待团队确认。</p>
+          <details className="expand" style={{ marginTop: 14 }}>
+            <summary>展开 BOM 明细与制造问题清单</summary>
+            <div className="expand-body">
+              <div className="boundary-grid" style={{ margin: '8px 0 16px' }}>
+                <div>
+                  <h3 style={{ fontSize: 19, marginBottom: 8 }}>跨方案共享 PETG 件</h3>
+                  <table>
+                    <thead><tr><th>零件</th><th>数量</th><th>共享范围</th></tr></thead>
+                    <tbody>{PETG_SHARED.map(r => <tr key={r.part}><td>{r.part}</td><td className="num">{r.qty}</td><td className="meta">{r.scope}</td></tr>)}</tbody>
+                  </table>
+                </div>
+                <div>
+                  <h3 style={{ fontSize: 19, marginBottom: 8 }}>SCZ 专属 PETG 件（44 件）</h3>
+                  <table>
+                    <thead><tr><th>零件</th><th>数量</th></tr></thead>
+                    <tbody>{PETG_SCZ.map(r => <tr key={r.part}><td>{r.part}</td><td className="num">{r.qty}</td></tr>)}</tbody>
+                  </table>
+                </div>
+              </div>
+              {MFG_ISSUES.map(issue => (
+                <p key={issue.title} style={{ margin: '10px 0' }}>
+                  <b>{issue.title}</b>（{issue.status}）<br />
+                  <span className="muted">{issue.detail} 影响：{issue.affected} 对策：{issue.options}</span>
+                </p>
+              ))}
+              <div className="evidence-row">
+                <button className="btn sm ghost" onClick={() => openEvidence('cadprint')}>PRINT_PLAN_5_MACHINES</button>
+                <button className="btn sm ghost" onClick={() => openEvidence('cadguide')}>ASSEMBLY_GUIDE</button>
+              </div>
+            </div>
+          </details>
+        </div>
 
-        <div className="panel" style={{ marginTop: 22 }}>
-          <h3>下一步实验重点（闸门规则不变）</h3>
-          <ul className="reason-list">
-            <li><b>先齐套：</b>PETG 缺口盘点 → 补打/改排产决策 → L4 试件试配冻结配合间隙。</li>
-            <li><b>SCZ：</b>回差 &gt;0.15 mm 或低位卡滞即终止；<b>F09：</b>左右高度差 &gt;0.15 mm 别卡即停；<b>F07：</b>挠度/重复定位超限切 F08。</li>
-            <li><b>最终对照：</b>通过闸门的 1–2 套方案组装完整打印机，折叠前后同一 G-code 各三次打印对照。</li>
-          </ul>
+        <div className="boundary-grid">
+          <div className="boundary-col ok">
+            <h3>已通过 CAD / 仿真验证</h3>
+            <ul>
+              <li>运动学相位、限位与防呆顺序</li>
+              <li>2001 步采样 + 凸包保守无碰撞</li>
+              <li>L2b 装配闭合 + 孔轴审计（V6）</li>
+              <li>认证连续碰撞（V3.2.1 简化 OBB）</li>
+            </ul>
+          </div>
+          <div className="boundary-col todo">
+            <h3>必须靠实物回答</h3>
+            <ul>
+              <li><b>F09 刚性同步杆 ≠ 原双丝杆+同步带性能</b></li>
+              <li><b>SCZ 手动剪叉 ≠ 丝杆推力与效率</b></li>
+              <li>打印配合（FDM ±0.2–0.5 mm vs 净距 0.007–0.023 mm）</li>
+              <li>摩擦/卡滞、承载刚度、寿命、同 G-code 打印对照</li>
+            </ul>
+          </div>
         </div>
 
         <div className="final-quote">让仿真决定值得测试什么，<br />让实物决定最终留下什么。</div>

@@ -1,0 +1,79 @@
+{
+ "cand": "F08_OPTIONAL",
+ "source": "round1-demo-cad @ d35cbd1 · CAD_SOURCE/validate_r1.placements + joints_r1.joints",
+ "instances": [
+  "CARD",
+  "SLIDER",
+  "COL",
+  "FOOT",
+  "ARM"
+ ],
+ "base_parts": [
+  "ARM",
+  "CARD",
+  "COL",
+  "FOOT",
+  "SLIDER"
+ ],
+ "n_instances": 5,
+ "n_base_parts": 5,
+ "fasteners_note": "销轴/卡圈（PIN*/CLIP*）为紧固件，与原渲染器 load_parts 口径一致不进入运行时网格；其规格见 BOM 与证据。",
+ "bounds_local": {
+  "CARD": [
+   -60.0,
+   -5.551115123125783e-17,
+   0.0,
+   140.0,
+   175.0,
+   3.0
+  ],
+  "SLIDER": [
+   -6.0,
+   -6.0,
+   0.0,
+   6.0,
+   6.0,
+   12.0
+  ],
+  "COL": [
+   -6.263416767120361,
+   -5.99442195892334,
+   6.0,
+   13.763416290283203,
+   143.49441528320312,
+   9.0
+  ],
+  "FOOT": [
+   -30.0,
+   -5.0,
+   3.0,
+   5.0,
+   5.0,
+   6.0
+  ],
+  "ARM": [
+   -12.0,
+   -8.0,
+   9.0,
+   107.5,
+   8.0,
+   12.0
+  ]
+ },
+ "assembly_bbox_t0": [
+  -60.0,
+  -8.0,
+  0.0,
+  140.0,
+  175.0,
+  12.0
+ ],
+ "samples": 161,
+ "key_t": [
+  0.0,
+  0.2,
+  0.42,
+  0.7,
+  1.0
+ ]
+}
