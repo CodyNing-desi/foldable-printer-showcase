@@ -5,9 +5,9 @@ import { F04Scene } from '../three/SchematicScenes'
 import type { F04Mode, ViewMode } from '../three/SchematicScenes'
 
 const MODES: { id: F04Mode; label: string; cap: string; detail: string }[] = [
-  { id: 'before', label: 'Before · 抽象模型', cap: '优化器优化的，是一条没有槽轨的抽象路径', detail: '抬升 → 平移 → 转轴。guided 参数从未被使用，F04 与根部翻折共用轨迹函数。优化解 lift=70/shift=20 在此模型下 0 穿透。' },
-  { id: 'after', label: 'After · 补全机构', cap: '补上真实槽轨、滚轮与导向约束', detail: '槽轨中心线、槽宽 12、滚轮 Ø8、导向间隙实例化；槽轨与热床成为碰撞对。模型命名终于等于模型内容。' },
-  { id: 'why', label: 'Why Failed · 失败机制', cap: '翻折段槽轨扫过热床：穿透 45.338 mm²', detail: '补全后名义穿透 45.338 mm²（2.5D 口径），全域搜索 0/238 可行。原优化解失效，推荐撤回。镜头已推近干涉位置。' },
+  { id: 'before', label: 'Before · 抽象模型', cap: '优化器优化的，是一条没有槽轨的抽象路径', detail: '模型里只有一条理想路径：先抬、再移、再转。真实槽轨、滚轮、导向约束一个都没有，"槽轨"参数从未被使用。优化器在这条假路径上找到了"不撞"的解。' },
+  { id: 'after', label: 'After · 补全机构', cap: '补上真实槽轨、滚轮与导向约束', detail: '把真实机构补进模型：槽轨实体、12 毫米槽宽、8 毫米滚轮、导向间隙，并让槽轨参与碰撞检查。模型的名字终于等于模型的内容。' },
+  { id: 'why', label: 'Why Failed · 失败机制', cap: '翻折段槽轨扫过热床：穿透 45.338 mm²', detail: '折叠到后半程，槽轨实体扫过热床区域，重叠截面 45.338 平方毫米（平面投影口径）；搜遍 238 组参数也找不到不撞的解。原推荐因此撤回。镜头已推近撞击位置。' },
 ]
 
 export function Ch4F04() {

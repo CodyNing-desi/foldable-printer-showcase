@@ -95,7 +95,7 @@ export function DetailDrawer() {
               if (!e) return null
               return (
                 <div className="ev-item" key={id}>
-                  <span>{e.title}<br /><span className="tiny muted mono">{e.repoPath}</span></span>
+                  <span>{e.title}<br /><span className="ev-plain">{e.plain}</span><br /><span className="tiny muted mono">{e.repoPath}</span></span>
                   <button className="btn sm" onClick={() => openEvidence(id)}>查看</button>
                 </div>
               )

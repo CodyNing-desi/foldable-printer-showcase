@@ -40,7 +40,7 @@ export function Ch3Matrix() {
       <div className="wrap">
         <div className="kicker">CHAPTER 03 · 统一标准</div>
         <h2 className="question">31 个离散姿态，够证明连续无碰撞吗？</h2>
-        <p className="lede">不够。这是 V3.2 验收抓到的真实反例：一个正弦往复运动，<b>采样点全在原点，碰撞藏在两点之间</b>。V3.2.1 改用解析运动上界强制细分，缺上界就拒绝下结论。</p>
+        <p className="lede">不够。抽查几个瞬间没撞，不代表整个过程没撞。下面这个真实反例里，抽查的三个瞬间都停在原点，<b>碰撞恰恰藏在两个抽查点之间</b>。最终版改用数学上可证明的检查：算不出可靠边界时，宁可回答"无法判定"，也不说"安全"。</p>
 
         <div className="sampling-grid">
           <div>
@@ -71,7 +71,7 @@ export function Ch3Matrix() {
             </div>
             <p style={{ fontSize: 21, color: 'var(--muted)', margin: '12px 0' }}>{v.note}</p>
             <p className="meta mono">evals = {v.evals}{demo === 'certified' ? ` · t=0.25 · 穿透 2.000 mm · v_max=100π` : ''}</p>
-            <p className="verdict-line" style={{ marginTop: 24 }}>采样密度稳定 ≠ 连续轨迹已证明。</p>
+            <p className="verdict-line" style={{ marginTop: 24 }}>抽查再密，也不等于全程证明。</p>
             <div className="evidence-row">
               <button className="btn sm ghost" onClick={() => openEvidence('report321')}>V3.2.1 验收纠错报告</button>
               <button className="btn sm ghost" onClick={() => openEvidence('review1')}>独立审查 · medium-5</button>
@@ -82,6 +82,7 @@ export function Ch3Matrix() {
         <details className="expand">
           <summary>查看证据：15 候选统一指标矩阵（V1 修正口径）与三种"通过"的区别</summary>
           <div className="expand-body">
+            <p style={{ marginBottom: 12 }}>先解释两个词：<b>穿透面积</b>＝折叠时零件互相重叠的截面大小，越大撞得越狠；<b>收纳比</b>＝折起来后的总体积 ÷ 展开时的总体积，越小越省地方，我们要求不超过 0.8。</p>
             <p style={{ marginBottom: 12 }}>
               <b>名义筛选</b>＝默认尺寸下是否自洽；<b>优化后可行解</b>＝是否存在一组尺寸让它可行（F04 曾在此"假可行"）；
               <b>工程入围</b>＝再叠加机构族多样性、六周窗口与证据增益（F12 仿真可行仍被 No-Go）。三者不是同一概念。

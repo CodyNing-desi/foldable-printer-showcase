@@ -64,8 +64,7 @@ export function Ch7Motion() {
         <div className="kicker">CHAPTER 07 · 机构解释器</div>
         <h2 className="question">让机械自己解释机械</h2>
         <p className="lede">
-          真实 R1-V6 CAD 装配（逐件 STL → GLB，零件树保留），运动由原仓库 <b>kinematics_r1.py</b> 权威运动学采样驱动。
-          旋转、点选零件、隔离、X 光、分阶段爆炸——所有操作不改变运动状态。
+          这不是手工动画：零件来自原始工程文件的逐件三维模型，运动由原工程文件里的<b>运动学公式</b>驱动。你可以旋转、点选零件、隔离、X 光、分阶段爆炸——所有操作都不会改变运动本身。
         </p>
 
         <div className="seg" role="tablist" aria-label="方案切换" style={{ marginBottom: 20 }}>

@@ -9,12 +9,12 @@ export interface MfgStep {
 
 export const MFG_LADDER: MfgStep[] = [
   { label: '方案筛选', state: 'done', note: '15 候选 · 7 阶段 · V3.2.1 冻结' },
-  { label: 'CAD 冻结', state: 'done', note: 'R1-V6 · L2b 闭合 + 孔轴审计通过' },
-  { label: '打印计划制定', state: 'done', note: 'PRINT_PLAN_5_MACHINES · 五机排产' },
+  { label: 'CAD 冻结', state: 'done', note: '演示模型第 6 版：装配约束与孔位检查通过' },
+  { label: '打印计划制定', state: 'done', note: '五台打印机分担零件的排产计划' },
   { label: '打印任务执行', state: 'done', note: '昨晚计划已执行完毕（团队现场口径）' },
-  { label: '零件齐套检查', state: 'active', note: 'PETG 数量不足 · 缺口盘点中' },
-  { label: '装配验证', state: 'pending', note: '待齐套后执行 · L4 试件试配' },
-  { label: '实测回填', state: 'pending', note: '刚度 / 回差 / 同步 / 打印对照' },
+  { label: '零件齐套检查', state: 'active', note: 'PETG（较韧的打印材料）零件不够 · 缺口盘点中' },
+  { label: '装配验证', state: 'pending', note: '零件到齐后装配；先用接口试件试配' },
+  { label: '实测回填', state: 'pending', note: '刚度 / 换向空程 / 左右同步 / 折叠前后打印对照' },
   { label: '最终选型', state: 'pending', note: '由实物闸门决定' },
 ]
 

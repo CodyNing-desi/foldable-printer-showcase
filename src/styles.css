@@ -115,7 +115,7 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border-radius
   border: 1px solid var(--line); border-radius: 14px; padding: 14px 20px;
 }
 .scene-caption .cap-t { font-size: 22px; font-weight: 700; font-family: var(--serif); }
-.scene-caption .cap-d { font-size: 18px; color: var(--muted); margin-top: 2px; }
+.scene-caption .cap-d { font-size: 20px; color: var(--muted); margin-top: 4px; }
 .scene-tag { background: rgba(26,29,35,0.85); color: #fff; font-size: 14px; padding: 4px 10px; border-radius: 7px; white-space: nowrap; font-family: var(--sans); }
 .scene-tag.accent { background: var(--blue); }
 .scene-tag.danger { background: var(--red); }
@@ -293,7 +293,9 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border-radius
 .modal-body pre { font-family: "Cascadia Code", Consolas, monospace; font-size: 14.5px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; color: var(--muted); margin: 0; }
 .modal-index { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px; }
 .modal-index .ev-item { flex-direction: column; align-items: flex-start; }
-.modal-index .d { color: var(--faint); font-size: 14px; }
+.modal-index .d { color: var(--faint); font-size: 13px; }
+.ev-plain { font-size: 16.5px; color: var(--muted); margin: 4px 0; line-height: 1.55; }
+.legend-line { font-size: 16px; color: var(--muted); margin-top: 12px; }
 .badge { display: inline-flex; align-items: center; gap: 6px; font-size: 15px; font-weight: 700; padding: 3px 12px; border-radius: 999px; border: 1.5px solid; white-space: nowrap; }
 
 /* ---------- autoplay ---------- */

@@ -12,17 +12,17 @@ const FOCUS: Record<StageId, string> = {
 }
 
 const STEP_TEXT: Record<StageId, { title: string; body: string }> = {
-  s0: { title: '15 种机构构想', body: '根部翻折、横臂、伸缩、槽轨、外部托架、箱体、抽屉、剪叉。未知尺寸显式写成假设。此时没有一套被验证。' },
-  v1pre: { title: 'V1 统一初筛', body: '31 姿态名义筛选：6 套通过。F04 名义失败，却在抽象优化里"通过"，一度与 F07 并列推荐——这是第一个陷阱。' },
-  v1fix: { title: '独立审查修正', body: 'F04 没有真实槽轨。补全后穿透 45.338 mm²、无可行解，推荐撤回。F11/F14 补全联动后也失败。' },
-  v2: { title: 'V2 三维检查', body: 'F09 双柱龙门首次通过（0.784）。它是被后续设计引入名单的，不是早期入围者。F12 收纳比 0.856 失败。' },
-  v3: { title: 'V3 附件包络', body: '计入料盘/电源/工具后：F07 一度出局（0.910），F12 优化版回归（0.735）。筛选不是单向删除卡片。' },
-  v31: { title: 'V3.1 实物决选', body: '不再按分数排序。F09/F07/SCZ 获 Conditional Go；F12 因六周制造风险、F04 因全域 0/238 被 No-Go。' },
-  v321: { title: 'V3.2.1 冻结', body: '认证连续碰撞复核。F09 抬升 85→82 才过 0.800 门槛。最终：两主候选 + 一台架 + 一备选。' },
+  s0: { title: '起点：15 种折叠思路', body: '先把"打印机怎么折"想成 15 种不同机构：折根部、缩立柱、剪叉、抽屉、装箱……所有尺寸假设都写明。此时没有任何一种被验证过。' },
+  v1pre: { title: '第一轮统一考试', body: '15 套机构用同一套规则检查：折叠过程会不会自己撞自己、折起来够不够小、展开后够不够打印。6 套及格。F04 本该不及格，却在一个简化过头的模型里拿了满分，一度被推荐——第一个陷阱。' },
+  v1fix: { title: '独立审查：模型作弊被抓', body: '请项目外的人逐行查代码，发现 F04 的"槽轨"根本不存在，只是一条理想路径。补上真实槽轨后它立刻撞床、无解，推荐被撤回。F11 的箱盖、F14 的第二段动作此前也没建模，补全后同样不及格。' },
+  v2: { title: '换三维尺子再量一遍', body: '从平面投影升级到真实三维碰撞检查。双柱龙门 F09 第一次及格——它是后来靠设计改进进入名单的，不是一开始就在。F12 因为折起来还是太大而出局。' },
+  v3: { title: '把行李也算进体积', body: '收纳不能只算机器本体：料盘、电源、工具都要一起带走。算上附件后 F07 一度出局，F12 改了结构又回来。筛选不是一路删卡片，而是有人出去、有人回来。' },
+  v31: { title: '决定造哪几套', body: '不再按总分排序，而是问：六周内造得出来吗？造出来能回答什么新问题？结论：F09、F07 造整机验证，SCZ 只造台架，F08 留作备选；F12、F04 停止。' },
+  v321: { title: '最终冻结名单', body: '用数学上可证明的连续碰撞检查复核所有方案。F09 把抬升高度从 85 毫米微调到 82 毫米才真正过线。最终：两套主候选、一套台架、一套备选。' },
 }
 
 export function Ch2Candidates() {
-  const { stage, setStage, openCandidate, auto } = useApp()
+  const { stage, setStage, openCandidate, openEvidence, auto } = useApp()
   const stepsRef = useRef<HTMLDivElement>(null)
   const stageRef = useRef(stage); stageRef.current = stage
   const autoRef = useRef(auto.active); autoRef.current = auto.active
@@ -91,7 +91,7 @@ export function Ch2Candidates() {
                 <div className={`step-card ${stage === s.id ? 'on' : ''}`}>
                   <h3>{STEP_TEXT[s.id].title}</h3>
                   <p>{STEP_TEXT[s.id].body}</p>
-                  <span className="meta">{s.version} · {s.resultType}</span>
+                  <button className="btn sm ghost" style={{ marginTop: 12 }} onClick={() => openEvidence(STAGE_BY_ID[s.id].evidence[0])}>查看本轮证据</button>
                 </div>
               </div>
             ))}
@@ -110,7 +110,7 @@ export function Ch2Candidates() {
             )
           })}
         </div>
-        <p className="meta" style={{ marginTop: 10 }}>状态点颜色：绿=通过 · 琥珀=曾被推荐/有条件 · 紫=台架 · 蓝=备选 · 红=No-Go · 灰=归档/未验证。点击编号打开证据抽屉。</p>
+        <p className="legend-line">状态点：绿＝通过本轮检查；琥珀＝曾被推荐或有条件继续；紫＝只做台架；蓝＝备选；红＝停止；灰＝归档或未验证。点任意编号看完整理由与证据。</p>
       </div>
     </section>
   )

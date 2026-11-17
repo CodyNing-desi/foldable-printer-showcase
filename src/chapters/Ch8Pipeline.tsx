@@ -26,7 +26,7 @@ export function Ch8Pipeline() {
 
         <div className="issue-block">
           <h3>⚠ PETG 零件数量不足</h3>
-          <p>BOM 口径 PETG 共 23 项 / 133 件。跨方案共享销/卡圈影响全部路线；SCZ 专属件最多（44 件）。具体缺口待齐套核查回填；对策（补打 / 改排产 / 金属销与 E 卡圈外购评估）待团队确认。</p>
+          <p>按零件清单（BOM），需要 PETG（一种更韧、耐反复拆装的打印材料）的零件共 23 种、133 件。其中销钉和卡圈是多套方案共用的，缺了会同时卡住所有路线；剪叉台架 SCZ 的专属件最多（44 件）。具体缺多少待"齐套"核查（逐件点数确认到齐）后回填；对策（补打 / 改排产 / 评估外购金属销与卡圈）待团队确认。</p>
           <details className="expand" style={{ marginTop: 14 }}>
             <summary>展开 BOM 明细与制造问题清单</summary>
             <div className="expand-body">
@@ -66,8 +66,8 @@ export function Ch8Pipeline() {
             <ul>
               <li>运动学相位、限位与防呆顺序</li>
               <li>2001 步采样 + 凸包保守无碰撞</li>
-              <li>L2b 装配闭合 + 孔轴审计（V6）</li>
-              <li>认证连续碰撞（V3.2.1 简化 OBB）</li>
+              <li>装配约束闭合检查 + 孔位真实存在性审计（第 6 版新增）</li>
+              <li>数学可证明的连续碰撞检查（简化包围盒模型）</li>
             </ul>
           </div>
           <div className="boundary-col todo">
@@ -75,8 +75,8 @@ export function Ch8Pipeline() {
             <ul>
               <li><b>F09 刚性同步杆 ≠ 原双丝杆+同步带性能</b></li>
               <li><b>SCZ 手动剪叉 ≠ 丝杆推力与效率</b></li>
-              <li>打印配合（FDM ±0.2–0.5 mm vs 净距 0.007–0.023 mm）</li>
-              <li>摩擦/卡滞、承载刚度、寿命、同 G-code 打印对照</li>
+              <li>打印配合：3D 打印误差约 ±0.2–0.5 毫米，而设计间隙只有 0.007–0.023 毫米</li>
+              <li>摩擦与卡滞、承载刚度、寿命、折叠前后同一模型打印对照</li>
             </ul>
           </div>
         </div>

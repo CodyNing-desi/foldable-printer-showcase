@@ -84,6 +84,7 @@ export interface EvidenceItem {
   repoPath: string
   branch: string
   desc: string
+  plain: string
 }
 
 export const STATUS_META: Record<Status, { label: string; color: string; icon: string }> = {

@@ -59,7 +59,7 @@ export function EvidenceModal() {
                 <div className="ev-item" key={e.id}>
                   <div>
                     <b>{e.title}</b>
-                    <div className="d">{e.desc}</div>
+                    <div className="ev-plain">{e.plain}</div>
                     <div className="d mono">{e.branch} · {e.repoPath}</div>
                   </div>
                   <div style={{ display: 'flex', gap: 8 }}>

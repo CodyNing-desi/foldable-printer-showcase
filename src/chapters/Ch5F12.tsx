@@ -14,15 +14,15 @@ export function Ch5F12() {
       <div className="wrap">
         <div className="kicker">CHAPTER 05 · 第二次关键逆转</div>
         <h2 className="question">仿真全场最优，为什么还是不做？</h2>
-        <p className="lede">F12 三级伸缩：收纳比 0.735、Y 挠度 0.0612 mm 全场最优、连续碰撞 PASS。打开<b>晃动示意</b>，看六周课程窗口里真正的问题。</p>
+        <p className="lede">F12 像三节套缩的钓鱼竿：折起来最小、受力时最不容易弯，仿真检查全部通过。但打开<b>晃动示意</b>就能看到真问题：三节套筒之间的间隙会累积成晃动，六周内做不稳。</p>
 
         <div className="scene">
           <div className="scene-canvas" ref={sceneRef}>
             <span className="scene-badge">原理示意 · 按 screening_v3.json 参数重建（F12 无 CAD 零件，不制造）</span>
             <F12Scene extend={f12Extend} wobbleOn={f12Wobble} view={view} active={inView} />
             <div className="scene-caption">
-              <div className="cap-t">{f12Wobble ? '导向晃动 0.203–0.229 mm（夸大 ×20 示意）' : '三级嵌套伸缩 · 外径 60 / 壁厚 3 / 重叠 52'}</div>
-              <div className="cap-d">{f12Wobble ? '多级导向间隙累积 → 卡滞风险。设计径向间隙仅 0.015 mm，常规加工与打印难以稳定保证。' : '拖动滑块展开/收拢。几何上它完全可行——问题不在几何。'}</div>
+              <div className="cap-t">{f12Wobble ? '导向晃动 0.203–0.229 mm（夸大 ×20 示意）' : '三节套筒嵌套伸缩：外节 60 毫米见方、壁厚 3 毫米、节间重叠 52 毫米'}</div>
+              <div className="cap-d">{f12Wobble ? '节间间隙越小越稳，但设计只留 0.015 毫米——普通加工和 3D 打印都难以稳定做到；间隙一旦变大，晃动累积就可能卡死。' : '拖动滑块展开/收拢。几何上它完全可行——问题不在几何。'}</div>
             </div>
           </div>
           <div className="vbar">

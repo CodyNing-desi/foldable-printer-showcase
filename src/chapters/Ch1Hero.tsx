@@ -26,6 +26,19 @@ export function Ch1Hero() {
           <button className="btn primary" onClick={() => scrollTo('ch2')}>开始查看 ↓</button>
           <button className="btn" onClick={startAuto}>▶ 自动演示（约 {AUTO_TOTAL} 秒）</button>
         </div>
+        <details className="expand" style={{ maxWidth: 640 }}>
+          <summary>术语速览（给第一次看的观众）</summary>
+          <div className="expand-body">
+            <p><b>收纳比</b>：折起来后的总体积 ÷ 展开时的总体积。越小越省地方；我们要求 ≤0.8，且必须把料盘、电源、工具一起算进去。</p>
+            <p><b>穿透面积</b>：折叠过程中零件互相重叠的截面大小。大于 0 就是"自己撞自己"。</p>
+            <p><b>名义筛选 / 优化 / 工程入围</b>：默认尺寸下及格 ≠ 存在一组尺寸能及格 ≠ 值得在六周内造出来。三层结论不能混。</p>
+            <p><b>连续碰撞认证</b>：不是抽查几个瞬间没撞，而是用数学边界证明整段运动都不撞。</p>
+            <p><b>挠度 / P95</b>：侧向推 10 牛时末端弯多少毫米；P95 是重复展开定位误差的 95 分位（模型估计，非实测）。</p>
+            <p><b>运动副</b>：零件之间允许某种相对运动的连接，如转轴（铰链）、滑轨（移动副）。</p>
+            <p><b>缩比 1:2</b>：屏幕上的演示模型是原设计的一半尺寸，只验证"动得对、装得上"，不验证承载与寿命。</p>
+            <p><b>齐套</b>：逐件点数确认所有零件到齐。打印执行完 ≠ 齐套 ≠ 装配完 ≠ 测试完。</p>
+          </div>
+        </details>
       </div>
       <div className="scene">
         <div className="scene-canvas" ref={sceneRef}>

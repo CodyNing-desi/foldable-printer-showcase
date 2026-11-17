@@ -2,10 +2,10 @@ import { ROBUST_TABLE, THIRD_COMPARE, FINAL_BOARD } from '../data/analysis'
 import { useApp, assetUrl } from '../state'
 
 const ROUTES = [
-  { id: 'F09_L82', img: 'F09_L82', role: '主候选 1 · CONDITIONAL GO', color: 'var(--amber)', why: '刚度潜力最高（Y 挠度 0.1252 mm 最优）。双侧同步与横梁连接必须实物回答。', nums: '收纳比 0.786 · lift=82 才过 0.800 门槛' },
-  { id: 'F07', img: 'F07', role: '主候选 2 · CONDITIONAL GO', color: 'var(--amber)', why: '结构最简、六周完成概率最高。代价：单柱抗扭与 0.021 mm 极小导向净距要实测。', nums: '收纳比 0.751 · Y 挠度 0.8166 mm' },
-  { id: 'SCZ', img: 'SCZ', role: '主候选 3 · BENCH-ONLY', color: 'var(--violet)', why: '入围靠独立机构证据增益，不是分数：回差、同步、非线性 Z 映射是最大证据缺口。只做台架。', nums: '收纳比 0.503 · 回差 >0.15 mm 即终止' },
-  { id: 'F08', img: 'F08_OPTIONAL', role: '备选 · FALLBACK', color: 'var(--blue)', why: '与 F07 同族、证据重复；最长边 897 mm 超便携。只在 F07/F09 台架失败时启用。', nums: '收纳比 0.616 · 前三频率 100%' },
+  { id: 'F09_L82', img: 'F09_L82', role: '主候选 1 · CONDITIONAL GO', color: 'var(--amber)', why: '刚度潜力最高（Y 挠度 0.1252 mm 最优）。双侧同步与横梁连接必须实物回答。', nums: '折起来体积是展开的 78.6%（门槛 80%）；抬升 82 毫米才过线' },
+  { id: 'F07', img: 'F07', role: '主候选 2 · CONDITIONAL GO', color: 'var(--amber)', why: '结构最简、六周完成概率最高。代价：单柱抗扭与 0.021 mm 极小导向净距要实测。', nums: '收纳比 75.1%；侧向受力弯 0.82 毫米（偏软）' },
+  { id: 'SCZ', img: 'SCZ', role: '主候选 3 · BENCH-ONLY', color: 'var(--violet)', why: '入围靠独立机构证据增益，不是分数：回差、同步、非线性 Z 映射是最大证据缺口。只做台架。', nums: '收纳比 50.3%；换向空程超 0.15 毫米即停止' },
+  { id: 'F08', img: 'F08_OPTIONAL', role: '备选 · FALLBACK', color: 'var(--blue)', why: '与 F07 同族、证据重复；最长边 897 mm 超便携。只在 F07/F09 台架失败时启用。', nums: '收纳比 61.6%；但折后最长边 897 毫米，超出便携箱' },
 ]
 
 export function Ch6Decision() {
@@ -16,7 +16,7 @@ export function Ch6Decision() {
       <div className="wrap">
         <div className="kicker">CHAPTER 06 · 最终决策</div>
         <h2 className="question">为什么不是综合前三名？</h2>
-        <p className="lede">规则在优化前就冻结：<b>稳健前三 ≥80% 且机构族不同</b>。按分数排会得到 F07/F08/F12——但 F08 证据重复、F12 六周造不出来。工程决策还要问：每条路线会带回什么新证据。</p>
+        <p className="lede">规则事先写死：反复换权重打分仍稳定进前三（≥80%），且彼此不是同一类机构。按总分排会得到 F07/F08/F12——但 F08 与 F07 是同类机构（证据重复），F12 六周造不出来。工程决策还要问：每套实物能带回什么新答案？</p>
 
         <div className="routes">
           {ROUTES.map(r => (
@@ -36,8 +36,7 @@ export function Ch6Decision() {
           SCZ 不是因为所有指标最优秀而入围，而是因为它提供了另一种机构路线最需要被实物验证的问题。
         </p>
         <p className="lede" style={{ marginBottom: 0 }}>
-          F12 仿真 PASS 仍被工程 No-Go（见 Chapter 05）；F04 建模不成立被撤回（见 Chapter 04）。
-          缩比 CAD 只验证运动与装配逻辑——F09 刚性同步杆 ≠ 原同步传动性能，SCZ 手动剪叉 ≠ 丝杆推力验证。
+          F12 仿真全过仍被工程停止（第 05 章）；F04 因模型不成立被撤回（第 04 章）。注意：屏幕上的缩比模型只证明"动得对、装得上"——F09 用一根刚性杆代替了原设计的双丝杆同步带，SCZ 用手推代替了丝杆驱动，它们的真实性能还没验证。
         </p>
 
         <details className="expand">
