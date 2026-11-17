@@ -3,7 +3,8 @@ import { CANDIDATES } from '../data/candidates'
 import { STAGES, STAGE_BY_ID, stageStatus } from '../data/stages'
 import { STATUS_META } from '../data/types'
 import type { StageId } from '../data/types'
-import { useApp, useInView } from '../state'
+import { useApp, useCtrl, useInView } from '../state'
+import { VersionStrip } from '../components/VersionStrip'
 import { MechanismViewer, webglAvailable } from '../three/MechanismViewer'
 import { FramePlayer } from '../components/FramePlayer'
 
@@ -27,8 +28,14 @@ export function Ch2Candidates() {
   const stageRef = useRef(stage); stageRef.current = stage
   const autoRef = useRef(auto.active); autoRef.current = auto.active
   const [hasGL] = useState(webglAvailable)
-  const [pose, setPose] = useState(0)
   const [sceneRef, inView] = useInView<HTMLDivElement>()
+  const { ctrl, setCtrl } = useCtrl()
+
+  useEffect(() => {
+    const vmap: Record<StageId, string> = { s0: 'v1', v1pre: 'v1', v1fix: 'v1', v2: 'v2', v3: 'v3', v31: 'v321', v321: 'v321' }
+    setCtrl({ version: vmap[stage], t: 0, playing: true, explode: 0, isolate: null })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stage])
 
   useEffect(() => {
     const root = stepsRef.current
@@ -67,17 +74,19 @@ export function Ch2Candidates() {
               <div className="scene-canvas" style={{ height: 'min(58vh, 620px)' }} ref={sceneRef}>
                 <span className="scene-badge">{focus} · 当前阶段展示机构</span>
                 {hasGL ? (
-                  <MechanismViewer cand={focus} ctrl={{ t: pose, explode: 0, xray: false, isolate: null, selected: null, traces: false, labels: false, preset: 'iso', presetToken: 0, frameToken: 0 }} onSelect={() => {}} onFallback={() => {}} className="viewer-fill" active={inView} />
+                  <MechanismViewer cand={focus} ctrl={{ t: ctrl.t, explode: 0, xray: false, isolate: null, selected: null, traces: false, labels: false, preset: 'iso', presetToken: 0, frameToken: 0, version: ctrl.version }} onSelect={() => {}} onFallback={() => {}} className="viewer-fill" active={inView} />
                 ) : <FramePlayer cand={focus} />}
                 <div className="scene-caption">
                   <div className="cap-t">{info.label}：{info.lesson}</div>
                 </div>
               </div>
               <div className="vbar">
-                <span className="meta">姿态</span>
-                <input type="range" min={0} max={1} step={0.005} value={pose} onChange={e => setPose(Number(e.target.value))} aria-label="机构姿态" />
+                <button className="play-btn" style={{ width: 42, height: 42, fontSize: 15 }} onClick={() => { if (!ctrl.playing && ctrl.t >= 1) setCtrl({ t: 0 }); setCtrl({ playing: !ctrl.playing }) }} aria-label={ctrl.playing ? '暂停' : '播放该版本折叠'}>{ctrl.playing ? '❚❚' : '▶'}</button>
+                <input type="range" min={0} max={1} step={0.005} value={ctrl.t} onChange={e => setCtrl({ t: Number(e.target.value), playing: false })} aria-label="机构姿态" />
+                <span className="meta mono">{Math.round(ctrl.t * 100)}%</span>
               </div>
             </div>
+            <VersionStrip cand={focus} />
             <div className="stage-line">
               {info.eliminated.length > 0 && <><span className="tag out">淘汰 {info.eliminated.join(' ')}</span></>}
               {info.entered.length > 0 && stage !== 's0' && <span className="tag in">进入 {info.entered.join(' ')}</span>}

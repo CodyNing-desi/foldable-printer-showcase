@@ -3,11 +3,12 @@ import { CAND_BY_ID } from '../data/candidates'
 import { STAGES } from '../data/stages'
 import { EV_BY_ID } from '../data/evidence'
 import { STATUS_META } from '../data/types'
-import { useApp, assetUrl } from '../state'
+import { useApp, useCtrl, assetUrl } from '../state'
 import { StatusBadge } from './StatusBadge'
 
 export function DetailDrawer() {
   const { selected, openCandidate, openEvidence, setMotionTab, scrollTo } = useApp()
+  const { setCtrl } = useCtrl()
 
   useEffect(() => {
     const fn = (e: KeyboardEvent) => { if (e.key === 'Escape') openCandidate(null) }
@@ -68,7 +69,14 @@ export function DetailDrawer() {
             {STAGES.map(s => {
               const cell = s.cells[c.id]
               return (
-                <div className="hist-item" key={s.id}>
+                <div className="hist-item" key={s.id} style={c.visual ? { cursor: 'pointer' } : undefined} onClick={() => {
+                  if (!c.visual) return
+                  const vmap: Record<string, string> = { s0: 'v1', v1pre: 'v1', v1fix: 'v1', v2: 'v2', v3: 'v3', v31: 'v321', v321: 'v321' }
+                  setMotionTab(c.visual)
+                  setCtrl({ version: vmap[s.id] ?? 'v321', t: 0, playing: true })
+                  openCandidate(null)
+                  scrollTo('ch7')
+                }}>
                   <div className="h-stage">
                     {s.label} <StatusBadge status={cell.status} />
                   </div>

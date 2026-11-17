@@ -164,6 +164,24 @@ await page.waitForTimeout(600)
 check('审查原文', (await page.locator('.modal-body pre').textContent()).includes('槽轨'))
 await page.click('.modal .close')
 
+// 10b 版本回放：点版本即加载该版本配置并自动播放
+await go('机构解释器', 2500)
+await page.click('#ch7 .vs-btn:has-text("V2 三维")')
+await page.waitForTimeout(700)
+const ro = await page.locator('#ch7 .vs-readout').textContent()
+check('版本回放 readout V2', ro.includes('V2 三维') && ro.includes('抬升 140'))
+const v0 = await pct()
+await page.waitForTimeout(1500)
+const v1 = await pct()
+check('点版本自动播放折叠', v0 !== v1, `${v0} -> ${v1}`)
+await page.click('#ch7 .vs-btn:has-text("V3.2.1 冻结")')
+await page.waitForTimeout(500)
+check('切回冻结版本', (await page.locator('#ch7 .vs-readout').textContent()).includes('抬升 82'))
+await go('候选与筛选', 1500)
+await page.click('.seg button:has-text("V2 三维")')
+await page.waitForTimeout(900)
+check('候选页阶段联动版本', (await page.locator('#ch2 .vs-readout').textContent()).includes('V2 三维'))
+
 // 11 字号层级审计
 const fonts = await page.evaluate(() => {
   const gs = sel => { const el = document.querySelector(sel); return el ? parseFloat(getComputedStyle(el).fontSize) : 0 }

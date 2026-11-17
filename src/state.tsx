@@ -28,11 +28,12 @@ export interface ViewerCtrl {
   preset: CamPreset
   presetToken: number
   frameToken: number
+  version: string
 }
 
 export const DEFAULT_CTRL: ViewerCtrl = {
   t: 0, playing: false, explode: 0, xray: false, isolate: null, selectedPart: null,
-  traces: false, labels: true, preset: 'iso', presetToken: 0, frameToken: 0,
+  traces: false, labels: true, preset: 'iso', presetToken: 0, frameToken: 0, version: 'v321',
 }
 
 interface AutoState { active: boolean; index: number; paused: boolean; progress: number }
@@ -147,7 +148,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const step = AUTO_STEPS[auto.index]
     if (!step) return
     if (step.stage) setStage(step.stage)
-    if (step.motion) { setMotionTab(step.motion); setCtrlState(c => ({ ...c, ...DEFAULT_CTRL, preset: 'iso', presetToken: c.presetToken + 1 })) }
+    if (step.motion) { setMotionTab(step.motion); setCtrlState(c => ({ ...c, ...DEFAULT_CTRL, preset: 'iso', presetToken: c.presetToken + 1, version: step.version ?? 'v321' })) }
+    if (step.version) setCtrlState(c => ({ ...c, version: step.version!, t: 0, playing: true }))
     if (step.ctrl) setCtrlState(c => ({ ...c, ...step.ctrl }))
     if (step.f04Mode) setF04Mode(step.f04Mode)
     if (typeof step.f04T === 'number') setF04T(step.f04T)

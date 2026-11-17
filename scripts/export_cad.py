@@ -23,6 +23,35 @@ import numpy as np
 import trimesh
 
 CANDS = ["F09_L82", "F07", "SCZ", "F08_OPTIONAL"]
+
+# 各版本真实仿真配置（全尺寸 mm；demo = ×0.5）。storage/passed 取自对应版本结果文件。
+# arm=1 表示该版本启用 X 臂先折；SCZ 的 arm 为半臂长。
+VERSIONS = {
+    "F09_L82": [
+        dict(id="v1", label="V1 名义", lift=140, arm=0, storage=1.187, passed=False, source="simulation/results/screening_summary.json"),
+        dict(id="v2", label="V2 三维", lift=140, arm=0, storage=0.784, passed=True, source="simulation_v2/results/screening_v2.json"),
+        dict(id="v3", label="V3 附件", lift=110, arm=0, storage=0.529, passed=True, source="simulation_v3/results/screening_v3.json"),
+        dict(id="v32", label="V3.2 验收", lift=85, arm=1, storage=0.802, passed=False, source="simulation_v3_2_1/results/…F09_L85 基线"),
+        dict(id="v321", label="V3.2.1 冻结", lift=82, arm=1, storage=0.786, passed=True, source="simulation_v3_2_1/results/v3_2_1_verification_summary.json"),
+    ],
+    "F07": [
+        dict(id="v1", label="V1 名义", lift=120, arm=0, storage=0.672, passed=True, source="simulation/results/screening_summary.json"),
+        dict(id="v2", label="V2 三维", lift=95, arm=1, storage=0.659, passed=True, source="simulation_v2/results/screening_v2.json"),
+        dict(id="v3", label="V3 附件", lift=95, arm=1, storage=0.910, passed=False, source="simulation_v3/results/screening_v3.json"),
+        dict(id="v321", label="V3.2.1 冻结", lift=75, arm=1, storage=0.751, passed=True, source="simulation_v3_2_1/results/v3_2_1_verification_summary.json"),
+    ],
+    "SCZ": [
+        dict(id="v1", label="V1 名义", arm_len=160, h_fold=50, h_max=305, storage=0.494, passed=True, source="simulation/results/screening_summary.json"),
+        dict(id="v2", label="V2 三维", arm_len=160, h_fold=50, h_max=305, storage=0.495, passed=True, source="simulation_v2/results/screening_v2.json"),
+        dict(id="v3", label="V3 附件", arm_len=160, h_fold=50, h_max=305, storage=0.483, passed=True, source="simulation_v3/results/screening_v3.json"),
+        dict(id="v321", label="V3.2.1 冻结", arm_len=154, h_fold=45, h_max=270, storage=0.503, passed=True, source="simulation_v3_2_1/results/v3_2_1_verification_summary.json"),
+    ],
+    "F08_OPTIONAL": [
+        dict(id="v1", label="V1 名义", lift=30, shift=-70, arm=0, storage=0.542, passed=True, source="simulation/results/screening_summary.json"),
+        dict(id="v2", label="V2 三维", lift=30, shift=-70, arm=1, storage=0.791, passed=True, source="simulation_v2/results/screening_v2.json"),
+        dict(id="v321", label="V3.2.1 冻结", lift=25, shift=-75, arm=1, storage=0.616, passed=True, source="simulation_v3_2_1/results/v3_2_1_verification_summary.json"),
+    ],
+}
 N_SAMPLES = 161
 KEY_T = [0.0, 0.2, 0.42, 0.7, 1.0]
 
@@ -75,18 +104,42 @@ def main():
         cdir.mkdir(parents=True, exist_ok=True)
         scene.export(cdir / "assembly.glb")
 
-        tracks = {pid: {"p": [], "q": []} for pid in instances}
-        ts = np.linspace(0, 1, N_SAMPLES)
-        for t in ts:
-            pl = V.placements(cand, float(t))
-            for pid in instances:
-                if pid in pl:
-                    pos, R = pl[pid]
-                else:
-                    pos, R = np.zeros(3), np.eye(3)
-                tracks[pid]["p"].extend([float(x) for x in pos])
-                tracks[pid]["q"].extend(quat_from_R(np.asarray(R)))
-        (cdir / "tracks.json").write_text(json.dumps({"n": N_SAMPLES, "tracks": tracks}, separators=(",", ":")), encoding="utf-8")
+        import kinematics_r1 as K
+        orig_phase = K.phase_values
+        versions_out = []
+        for ver in VERSIONS[cand]:
+            # 按该版本真实配置 patch 权威运动学常数（不重写运动学逻辑）
+            if cand in ("F09_L82", "F07"):
+                K.LIFT[cand] = ver["lift"] * 0.5
+            if cand == "SCZ":
+                K.SCZ["L"] = ver["arm_len"] * 0.5
+                K.SCZ["h_fold"] = ver["h_fold"] * 0.5
+                K.SCZ["h_max"] = ver["h_max"] * 0.5
+            def patched(c, t, _ver=ver, _orig=orig_phase):
+                pv = _orig(c, t)
+                if c in ("F09_L82", "F07", "F08_OPTIONAL") and _ver.get("arm", 1) == 0:
+                    pv["arm"] = 0.0
+                if c == "F08_OPTIONAL":
+                    pv["lift"] = _ver["lift"] * 0.5 * K.ease((t - 0.20) / 0.20)
+                    pv["shift"] = _ver["shift"] * 0.5 * K.ease((t - 0.40) / 0.15)
+                return pv
+            K.phase_values = patched
+            tracks = {pid: {"p": [], "q": []} for pid in instances}
+            ts = np.linspace(0, 1, N_SAMPLES)
+            for t in ts:
+                pl = V.placements(cand, float(t))
+                for pid in instances:
+                    if pid in pl:
+                        pos, R = pl[pid]
+                    else:
+                        pos, R = np.zeros(3), np.eye(3)
+                    tracks[pid]["p"].extend([float(x) for x in pos])
+                    tracks[pid]["q"].extend(quat_from_R(np.asarray(R)))
+            fname = "tracks.json" if ver["id"] == "v321" else f"tracks_{ver['id']}.json"
+            (cdir / fname).write_text(json.dumps({"n": N_SAMPLES, "tracks": tracks}, separators=(",", ":")), encoding="utf-8")
+            versions_out.append(dict(ver, file=fname, arm_scale=(ver["arm_len"] * 0.5 / 77.0) if cand == "SCZ" else 1.0))
+        K.phase_values = orig_phase
+        (cdir / "versions.json").write_text(json.dumps(versions_out, ensure_ascii=False, indent=1), encoding="utf-8")
 
         joints = []
         for j in J.joints(cand):

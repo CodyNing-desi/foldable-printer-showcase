@@ -46,7 +46,7 @@ export function Ch1Hero() {
           {hasGL ? (
             <MechanismViewer
               cand="F09_L82"
-              ctrl={{ t: fold, explode: 0, xray: false, isolate: null, selected: null, traces: false, labels: false, preset: 'iso', presetToken: 0, frameToken: 0 }}
+              ctrl={{ t: fold, explode: 0, xray: false, isolate: null, selected: null, traces: false, labels: false, preset: 'iso', presetToken: 0, frameToken: 0, version: 'v321' }}
               onSelect={() => {}} onFallback={() => {}} className="viewer-fill"
             />
           ) : (

@@ -4,6 +4,7 @@ import { useApp, useCtrl, useInView } from '../state'
 import { MechanismViewer, webglAvailable } from '../three/MechanismViewer'
 import type { ViewerCtrl as VCtrl } from '../three/MechanismViewer'
 import { FramePlayer } from '../components/FramePlayer'
+import { VersionStrip } from '../components/VersionStrip'
 import { partLabel } from '../data/viewer'
 import type { CamPreset } from '../data/viewer'
 import { EV_BY_ID } from '../data/evidence'
@@ -26,7 +27,7 @@ export function Ch7Motion() {
   }, [motionTab])
 
   useEffect(() => {
-    setCtrl({ t: 0, playing: false, explode: 0, xray: false, isolate: null, selectedPart: null, traces: false, preset: 'iso', presetToken: ctrl.presetToken + 1 })
+    setCtrl({ t: 0, playing: false, explode: 0, xray: false, isolate: null, selectedPart: null, traces: false, preset: 'iso', presetToken: ctrl.presetToken + 1, version: 'v321' })
     setFallback(!webglAvailable())
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [motionTab])
@@ -51,7 +52,7 @@ export function Ch7Motion() {
   const viewerCtrl: VCtrl = {
     t: ctrl.t, explode: ctrl.explode, xray: ctrl.xray, isolate: ctrl.isolate,
     selected: ctrl.selectedPart, traces: ctrl.traces, labels: ctrl.labels,
-    preset: ctrl.preset, presetToken: ctrl.presetToken, frameToken: ctrl.frameToken,
+    preset: ctrl.preset, presetToken: ctrl.presetToken, frameToken: ctrl.frameToken, version: ctrl.version,
   }
   const presets: { id: CamPreset; label: string }[] = [
     { id: 'iso', label: '等轴' }, { id: 'front', label: '正视' }, { id: 'side', label: '侧视' },
@@ -72,6 +73,8 @@ export function Ch7Motion() {
             <button key={m.id} role="tab" aria-selected={motionTab === m.id} className={motionTab === m.id ? 'on' : ''} onClick={() => setMotionTab(m.id)}>{m.tab}</button>
           ))}
         </div>
+
+        <VersionStrip cand={motionTab} />
 
         <div className="scene">
           <div className="scene-canvas" ref={sceneRef}>

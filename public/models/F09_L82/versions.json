@@ -1,0 +1,57 @@
+[
+ {
+  "id": "v1",
+  "label": "V1 名义",
+  "lift": 140,
+  "arm": 0,
+  "storage": 1.187,
+  "passed": false,
+  "source": "simulation/results/screening_summary.json",
+  "file": "tracks_v1.json",
+  "arm_scale": 1.0
+ },
+ {
+  "id": "v2",
+  "label": "V2 三维",
+  "lift": 140,
+  "arm": 0,
+  "storage": 0.784,
+  "passed": true,
+  "source": "simulation_v2/results/screening_v2.json",
+  "file": "tracks_v2.json",
+  "arm_scale": 1.0
+ },
+ {
+  "id": "v3",
+  "label": "V3 附件",
+  "lift": 110,
+  "arm": 0,
+  "storage": 0.529,
+  "passed": true,
+  "source": "simulation_v3/results/screening_v3.json",
+  "file": "tracks_v3.json",
+  "arm_scale": 1.0
+ },
+ {
+  "id": "v32",
+  "label": "V3.2 验收",
+  "lift": 85,
+  "arm": 1,
+  "storage": 0.802,
+  "passed": false,
+  "source": "simulation_v3_2_1/results/…F09_L85 基线",
+  "file": "tracks_v32.json",
+  "arm_scale": 1.0
+ },
+ {
+  "id": "v321",
+  "label": "V3.2.1 冻结",
+  "lift": 82,
+  "arm": 1,
+  "storage": 0.786,
+  "passed": true,
+  "source": "simulation_v3_2_1/results/v3_2_1_verification_summary.json",
+  "file": "tracks.json",
+  "arm_scale": 1.0
+ }
+]

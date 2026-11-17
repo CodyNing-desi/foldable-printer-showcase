@@ -1,0 +1,50 @@
+[
+ {
+  "id": "v1",
+  "label": "V1 名义",
+  "arm_len": 160,
+  "h_fold": 50,
+  "h_max": 305,
+  "storage": 0.494,
+  "passed": true,
+  "source": "simulation/results/screening_summary.json",
+  "file": "tracks_v1.json",
+  "arm_scale": 1.0389610389610389
+ },
+ {
+  "id": "v2",
+  "label": "V2 三维",
+  "arm_len": 160,
+  "h_fold": 50,
+  "h_max": 305,
+  "storage": 0.495,
+  "passed": true,
+  "source": "simulation_v2/results/screening_v2.json",
+  "file": "tracks_v2.json",
+  "arm_scale": 1.0389610389610389
+ },
+ {
+  "id": "v3",
+  "label": "V3 附件",
+  "arm_len": 160,
+  "h_fold": 50,
+  "h_max": 305,
+  "storage": 0.483,
+  "passed": true,
+  "source": "simulation_v3/results/screening_v3.json",
+  "file": "tracks_v3.json",
+  "arm_scale": 1.0389610389610389
+ },
+ {
+  "id": "v321",
+  "label": "V3.2.1 冻结",
+  "arm_len": 154,
+  "h_fold": 45,
+  "h_max": 270,
+  "storage": 0.503,
+  "passed": true,
+  "source": "simulation_v3_2_1/results/v3_2_1_verification_summary.json",
+  "file": "tracks.json",
+  "arm_scale": 1.0
+ }
+]

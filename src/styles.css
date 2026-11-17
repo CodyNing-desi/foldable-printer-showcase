@@ -319,3 +319,18 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border-radius
 .frameplayer img { display: block; width: 100%; height: auto; }
 
 .viewer-fill { position: absolute; inset: 0; }
+
+/* 版本回放 */
+.version-strip { margin: 16px 0; }
+.vs-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.vs-label { font-size: 16px; font-weight: 700; color: var(--muted); margin-right: 4px; }
+.vs-btn { display: inline-flex; align-items: center; gap: 8px; border: 1.5px solid var(--line); background: var(--card); color: var(--ink); border-radius: 999px; padding: 8px 18px; font-size: 16px; font-weight: 600; }
+.vs-btn:hover { border-color: var(--ink); }
+.vs-btn.on { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+.vs-dot { width: 9px; height: 9px; border-radius: 50%; }
+.vs-dot.ok { background: var(--green); }
+.vs-dot.bad { background: var(--red); }
+.vs-btn.on .vs-dot.ok { background: #7ee2a8; }
+.vs-btn.on .vs-dot.bad { background: #ff9d8a; }
+.vs-readout { font-size: 20px; color: var(--muted); margin: 10px 0 0; }
+.vs-readout b { color: var(--ink); }

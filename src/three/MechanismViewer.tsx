@@ -11,17 +11,21 @@ import { MOTIONS, phaseIndex } from '../data/motion'
 interface Tracks { n: number; tracks: Record<string, { p: number[]; q: number[] }> }
 interface Joint { name: string; kind: string; a: string; b: string; pa: number[]; pb: number[]; axis: number[]; pin?: number; hole?: number }
 interface Manifest { instances: string[]; assembly_bbox_t0: number[] }
+export interface VersionInfo { id: string; label: string; file: string; arm_scale: number; storage: number; passed: boolean; source: string; lift?: number; arm?: number; shift?: number; arm_len?: number; h_fold?: number; h_max?: number }
 
-const cache: Record<string, Promise<{ tracks: Tracks; joints: Joint[]; manifest: Manifest }>> = {}
-function loadMeta(cand: string) {
-  if (!cache[cand]) {
-    cache[cand] = Promise.all([
-      fetch(assetUrl(`models/${cand}/tracks.json`)).then(r => r.json()),
+const cache: Record<string, Promise<{ tracks: Tracks; joints: Joint[]; manifest: Manifest; versions: VersionInfo[] }>> = {}
+function loadMeta(cand: string, version: string) {
+  const key = `${cand}|${version}`
+  if (!cache[key]) {
+    const tf = version === 'v321' ? 'tracks.json' : `tracks_${version}.json`
+    cache[key] = Promise.all([
+      fetch(assetUrl(`models/${cand}/${tf}`)).then(r => r.json()),
       fetch(assetUrl(`models/${cand}/joints.json`)).then(r => r.json()),
       fetch(assetUrl(`models/${cand}/manifest.json`)).then(r => r.json()),
-    ]).then(([tracks, joints, manifest]) => ({ tracks, joints, manifest }))
+      fetch(assetUrl(`models/${cand}/versions.json`)).then(r => r.json()),
+    ]).then(([tracks, joints, manifest, versions]) => ({ tracks, joints, manifest, versions }))
   }
-  return cache[cand]
+  return cache[key]
 }
 
 export interface ViewerCtrl {
@@ -35,6 +39,7 @@ export interface ViewerCtrl {
   preset: CamPreset
   presetToken: number
   frameToken: number
+  version: string
 }
 
 // 模块级常量：避免每渲染新建对象导致 r3f 反复 configure
@@ -61,7 +66,7 @@ function sample(tr: { p: number[]; q: number[] }, n: number, t: number, outP: TH
 }
 
 function SceneContent({ cand, ctrl, meta, onSelect, controls, active, dragging }: {
-  cand: string; ctrl: ViewerCtrl; meta: { tracks: Tracks; joints: Joint[]; manifest: Manifest }
+  cand: string; ctrl: ViewerCtrl; meta: { tracks: Tracks; joints: Joint[]; manifest: Manifest; versions: VersionInfo[] }
   onSelect: (pid: string | null) => void; controls: MutableRefObject<any>; active: boolean; dragging: MutableRefObject<boolean>
 }) {
   const gltf = useGLTF(assetUrl(`models/${cand}/assembly.glb`))
@@ -109,7 +114,7 @@ function SceneContent({ cand, ctrl, meta, onSelect, controls, active, dragging }
   }, [materials, edges])
 
   // 取景请求：装载/方案/预设/隔离/爆炸模式/显式 token 变化时触发一次（非每帧）
-  const frameKey = `${cand}|${ctrl.preset}|${ctrl.isolate}|${ctrl.explode > 0 ? 1 : 0}|${ctrl.frameToken}|${ctrl.preset === 'detail' ? phaseIndex(spec, ctrl.t) : ''}`
+  const frameKey = `${cand}|${ctrl.version}|${ctrl.preset}|${ctrl.isolate}|${ctrl.explode > 0 ? 1 : 0}|${ctrl.frameToken}|${ctrl.preset === 'detail' ? phaseIndex(spec, ctrl.t) : ''}`
   if (frameKey !== lastFrameKey.current) { lastFrameKey.current = frameKey; snapNext.current = true }
 
   const phaseJoints = PHASE_JOINTS[cand] ?? []
@@ -150,6 +155,10 @@ function SceneContent({ cand, ctrl, meta, onSelect, controls, active, dragging }
       if (tr) sample(tr, meta.tracks.n, c.t, tmpP, tmpQ)
       else { tmpP.set(0, 0, 0); tmpQ.identity() }
       const ex = explodeSpec[pid]
+      if (cand === 'SCZ' && (pid.startsWith('ARM_A') || pid.startsWith('ARM_B'))) {
+        const vi = meta.versions.find(v => v.id === c.version)
+        obj.scale.set(vi?.arm_scale ?? 1, 1, 1)
+      }
       let cur = 0
       if (ex && c.explode > 0) {
         cur = explodeWindow(ex.order, maxOrder, c.explode)
@@ -305,16 +314,16 @@ export function webglAvailable(): boolean {
 export const MechanismViewer = memo(function MechanismViewer({ cand, ctrl, onSelect, onFallback, className, active = true }: {
   cand: string; ctrl: ViewerCtrl; onSelect: (pid: string | null) => void; onFallback: () => void; className?: string; active?: boolean
 }) {
-  const [meta, setMeta] = useState<{ tracks: Tracks; joints: Joint[]; manifest: Manifest } | null>(null)
+  const [meta, setMeta] = useState<{ tracks: Tracks; joints: Joint[]; manifest: Manifest; versions: VersionInfo[] } | null>(null)
   const [err, setErr] = useState(false)
   const controls = useRef<any>(null)
   const dragging = useRef(false)
 
   useEffect(() => {
     let alive = true
-    loadMeta(cand).then(m => { if (alive) setMeta(m) }).catch(() => { if (alive) setErr(true) })
+    loadMeta(cand, ctrl.version).then(m => { if (alive) setMeta(m) }).catch(() => { if (alive) setErr(true) })
     return () => { alive = false }
-  }, [cand])
+  }, [cand, ctrl.version])
   useEffect(() => { if (err) onFallback() }, [err, onFallback])
 
   if (err || !meta) return <div className={`viewer-loading ${className ?? ''}`}>{err ? '' : '加载真实 CAD 装配…'}</div>
