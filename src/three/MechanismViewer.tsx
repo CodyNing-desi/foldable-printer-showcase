@@ -92,7 +92,10 @@ function SceneContent({ cand, ctrl, meta, onSelect, controls, active, dragging, 
     const m: Record<string, THREE.MeshStandardMaterial> = {}
     for (const pid of Object.keys(nodes)) {
       const base = new THREE.Color(PART_COLORS[pid.split('_')[0]] ?? '#aeb6c0')
-      m[pid] = new THREE.MeshStandardMaterial({ color: base, roughness: 0.42, metalness: 0.12, transparent: true, opacity: 1 })
+      // 同族多实例明度区分，避免左右/多件剪影融成一团被误读为穿模
+      const dl = pid.endsWith('_1') || pid.endsWith('_R') ? 0.07 : pid.endsWith('_0') || pid.endsWith('_L') ? -0.05 : 0
+      base.offsetHSL(0, 0, dl)
+      m[pid] = new THREE.MeshStandardMaterial({ color: base, roughness: 0.42, metalness: 0.12, transparent: true, opacity: 1, side: THREE.FrontSide })
     }
     return m
   }, [nodes])
@@ -119,11 +122,13 @@ function SceneContent({ cand, ctrl, meta, onSelect, controls, active, dragging, 
   if (frameKey !== lastFrameKey.current) { lastFrameKey.current = frameKey; snapNext.current = true }
 
   const phaseJoints = PHASE_JOINTS[cand] ?? []
-  const markerRefs = useRef<(THREE.Mesh | null)[]>([])
+  const markerRefs = useRef<(THREE.Group | null)[]>([])
+  const ringRefs = useRef<(THREE.Mesh | null)[]>([])
   const activeJoints = useMemo(() => {
     const names = phaseJoints[phaseIndex(spec, ctrl.t)] ?? []
     return meta.joints.filter(j => names.includes(j.name)).slice(0, 3)
   }, [meta, spec, ctrl.t, phaseJoints])
+  const ringJoints = useMemo(() => (ctrl.labels ? activeJoints.filter(j => j.kind === 'R' && j.pin) : []), [ctrl.labels, activeJoints])
 
   const traceLines = useMemo(() => {
     if (!ctrl.traces) return []
@@ -177,12 +182,13 @@ function SceneContent({ cand, ctrl, meta, onSelect, controls, active, dragging, 
       const base = PART_COLORS[pid.split('_')[0]] ?? '#aeb6c0'
       if (edge) {
         const em = edge.material as THREE.LineBasicMaterial
-        edge.visible = !hidden && !(c.xray && !isSel && !moving.has(pid))
-        em.color.set(isSel || interf.has(pid) ? '#e8503a' : moving.has(pid) ? '#2456e6' : '#3a3f47')
-        em.opacity = isSel || moving.has(pid) || interf.has(pid) ? 0.9 : 0.45
+        const ghost = c.xray && !isSel && !moving.has(pid)
+        edge.visible = !hidden
+        em.color.set(isSel || interf.has(pid) ? '#e8503a' : ghost ? '#8a8f98' : moving.has(pid) ? '#2456e6' : '#3a3f47')
+        em.opacity = isSel || moving.has(pid) || interf.has(pid) ? 0.9 : ghost ? 0.55 : 0.45
       }
       if (c.xray && !isSel && !moving.has(pid)) {
-        mat.opacity = 0.13; mat.color.copy(COL_DIM); mat.depthWrite = false; mat.emissive.setRGB(0, 0, 0)
+        mat.opacity = 0.05; mat.color.copy(COL_DIM); mat.depthWrite = false; mat.emissive.setRGB(0, 0, 0)
       } else {
         mat.opacity = 1; mat.depthWrite = true
         const hit = interf.has(pid)
@@ -199,6 +205,18 @@ function SceneContent({ cand, ctrl, meta, onSelect, controls, active, dragging, 
       tmpV.set(j.pa[0], j.pa[1], j.pa[2]).applyMatrix4(na.matrixWorld)
       mk.position.copy(tmpV)
       mk.visible = c.explode < 0.05
+    })
+    // 配合间隙环：绕销轴名义接触面，显示"这里有设计间隙"，非零件几何
+    ringJoints.forEach((j, i) => {
+      const rg = ringRefs.current[i]
+      const na = nodes[j.a]
+      if (!rg || !na) return
+      na.updateWorldMatrix(true, false)
+      tmpV.set(j.pa[0], j.pa[1], j.pa[2]).applyMatrix4(na.matrixWorld)
+      rg.position.copy(tmpV)
+      const ax = new THREE.Vector3(j.axis[0], j.axis[1], j.axis[2]).transformDirection(na.matrixWorld)
+      rg.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), ax)
+      rg.visible = c.explode < 0.05
     })
 
     // 平滑跟随取景：目标盒 = 当前爆炸进度下整条轨道的并集（姿态不变），相机阻尼趋近 → 完整且不抖动
@@ -283,18 +301,22 @@ function SceneContent({ cand, ctrl, meta, onSelect, controls, active, dragging, 
       }}>
       </primitive>
       {activeJoints.map((j, i) => (
-        <mesh key={j.name} ref={el => { markerRefs.current[i] = el }}>
-          <sphereGeometry args={[3.4, 16, 16]} />
-          <meshBasicMaterial color="#e8503a" />
+        <group key={j.name} ref={el => { markerRefs.current[i] = el }}>
           {ctrl.labels && (
-            <Html center distanceFactor={420} style={{ pointerEvents: 'none' }}>
-              <div className="joint-tag">{JOINT_LABELS[j.name] ?? j.name}</div>
+            <Html center style={{ pointerEvents: 'none' }} zIndexRange={[40, 0]}>
+              <div className="joint-dot-wrap"><span className="joint-dot" /><span className="joint-tag">{JOINT_LABELS[j.name] ?? j.name}</span></div>
             </Html>
           )}
+        </group>
+      ))}
+      {ringJoints.map((j, i) => (
+        <mesh key={'ring' + j.name} ref={el => { ringRefs.current[i] = el }}>
+          <torusGeometry args={[((j.pin ?? 4) / 2) + 0.9, 0.32, 8, 40]} />
+          <meshBasicMaterial color="#d97706" transparent opacity={0.85} />
         </mesh>
       ))}
       {traceLines.map(tl => (
-        <Line key={tl.label} points={tl.points} color="#2456e6" lineWidth={1.8} dashed dashSize={5} gapSize={4} transparent opacity={0.8} />
+        <Line key={tl.label} points={tl.points} color="#2456e6" lineWidth={1.6} dashed dashSize={5} gapSize={4} transparent opacity={0.55} depthTest={false} renderOrder={999} />
       ))}
     </group>
   )
@@ -358,7 +380,7 @@ export const MechanismViewer = memo(function MechanismViewer({ cand, ctrl, onSel
           <Suspense fallback={null}>
             <SceneContent cand={cand} ctrl={ctrl} meta={meta} onSelect={onSelect} controls={controls} active={active} dragging={dragging} hook={hook} />
           </Suspense>
-          <OrbitControls ref={controls} makeDefault enableDamping dampingFactor={0.08} minDistance={30} maxDistance={2500} onStart={() => { dragging.current = true }} onEnd={() => { dragging.current = false }} />
+          <OrbitControls ref={controls} makeDefault enableDamping dampingFactor={0.08} minDistance={80} maxDistance={2500} onStart={() => { dragging.current = true }} onEnd={() => { dragging.current = false }} />
         </Canvas>
       </ViewerBoundary>
     </div>

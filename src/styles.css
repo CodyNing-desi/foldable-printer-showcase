@@ -336,3 +336,6 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border-radius
 .vs-readout b { color: var(--ink); }
 .vs-interf { font-size: 18px; color: var(--red); border: 1.5px solid var(--red); border-radius: 10px; background: rgba(232,80,58,0.06); padding: 10px 16px; margin: 10px 0 0; }
 .vs-interf b { font-weight: 800; }
+
+.joint-dot-wrap { display: flex; align-items: center; gap: 6px; transform: translate(10px, -10px); }
+.joint-dot { width: 13px; height: 13px; border: 2.5px solid var(--red); border-radius: 50%; background: rgba(232,80,58,0.28); box-shadow: 0 0 0 3px rgba(255,255,255,0.7); flex: none; }
