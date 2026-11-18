@@ -60,6 +60,46 @@ export function Ch8Pipeline() {
           </details>
         </div>
 
+        <div className="panel" style={{ margin: '26px 0' }}>
+          <h3 style={{ fontSize: 24, marginBottom: 12 }}>装配后会穿模吗？——给组员的三层回答</h3>
+          <div className="boundary-grid" style={{ margin: 0 }}>
+            <div className="boundary-col ok">
+              <h3>第一层 · 已排除：几何自撞</h3>
+              <ul>
+                <li>全行程 2001 步扫描：非允许接触对穿透 <b>0 处</b>；关键相位凸包保守检查全部确认。</li>
+                <li>装配约束闭合 + 孔位真实存在性审计：<b>0 失败</b>。</li>
+                <li>本轮 481 步独立复核（manifold 求体积）一致：冻结版四方案 0 穿透。</li>
+              </ul>
+            </div>
+            <div className="boundary-col todo">
+              <h3>第二层 · 未证明，但有测量阶梯</h3>
+              <ul>
+                <li>打印误差约 ±0.2–0.5 mm，远大于理论净距 0.007–0.023 mm——所以配合不按理论值做。</li>
+                <li>试件阶梯实测选定：孔 Ø5.2/5.3/5.4/5.5 vs 销 Ø5.0；<b>转动顺滑且径向晃动 ≤0.3 mm</b> 才合格。</li>
+                <li>滑槽侧隙 ≤0.4 mm、铰链末端间隙 ≥0.2 mm、卡圈 10 次拆装不裂。</li>
+              </ul>
+            </div>
+            <div className="boundary-col ok" style={{ borderTopColor: 'var(--blue)' }}>
+              <h3 style={{ color: 'var(--blue)' }}>第三层 · 兜底：失败在最便宜的阶段</h3>
+              <ul>
+                <li>顺序：先试片 → 后台架 → 最后整机。</li>
+                <li>SCZ 回差 &gt;0.15 mm 或低位卡滞 → 停；F09 左右差 &gt;0.15 mm 别卡 → 停；F07 超限 → 切 F08。</li>
+                <li>即使装配后发现问题，代价是几克耗材和几小时，不是整台整机和六周。</li>
+              </ul>
+            </div>
+          </div>
+          <p style={{ fontSize: 20, marginTop: 14 }}>
+            闭环：选定间隙<b>写回参数 → 重新生成正式件 → 复跑 L1–L3</b>。任何配合修改都重新过运动与装配检查，不是"把画面调对"。
+          </p>
+          <p style={{ fontSize: 20, marginTop: 8, color: 'var(--muted)' }}>
+            发现干涉是证据产出，不是努力白费：14 处历史版本回放的实体干涉已定位到时间区间、零件对、交集体积与归因；被淘汰的方案带着完整失败记录归档，是下次复评的起点。
+          </p>
+          <div className="evidence-row">
+            <button className="btn sm ghost" onClick={() => openEvidence('assemblyrisk')}>查看装配风险简报</button>
+            <button className="btn sm ghost" onClick={() => openEvidence('cadmotion')}>运动与装配验证报告</button>
+          </div>
+        </div>
+
         <div className="boundary-grid">
           <div className="boundary-col ok">
             <h3>已通过 CAD / 仿真验证</h3>

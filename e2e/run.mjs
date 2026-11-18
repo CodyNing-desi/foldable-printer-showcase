@@ -136,6 +136,7 @@ check('无过期表述', !ch8.includes('正在打印'))
 await page.click('#ch8 .expand summary')
 await page.waitForTimeout(400)
 check('BOM 展开', (await page.locator('#ch8 .expand-body').textContent()).includes('F09-CLIP3'))
+check('装配穿模三层回答', (await page.locator('#ch8').textContent()).includes('装配后会穿模吗') && (await page.locator('#ch8').textContent()).includes('径向晃动'))
 await shot('12-manufacturing')
 
 // 9 自动演示

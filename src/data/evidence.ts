@@ -25,6 +25,7 @@ export const EVIDENCE: EvidenceItem[] = [
   { id: 'cadlimits', title: 'R1-V6 模型限制声明', file: 'CAD_MODEL_LIMITATIONS.md', repoPath: 'ROUND1_DEMO_CAD/MODEL_LIMITATIONS.md', branch: CAD, desc: '缩比演示边界；F09 刚性同步杆、SCZ 手动剪叉等简化声明。', plain: '演示模型的能力边界声明：它只证明"动得对、装得上"，不证明"扛得住、用得久"。' },
   { id: 'cadchangelog', title: 'V5→V6 变更对照表', file: 'CAD_CHANGELOG_V5_V6.md', repoPath: 'ROUND1_DEMO_CAD/CHANGELOG_V5_V6.md', branch: CAD, desc: 'P0-1/P0-2/P0-3/P1-1/P1-2/P1-3 逐项修复与证据。', plain: '上一版演示模型被审查出的问题与本版逐条修复对照。' },
   { id: 'cadprint', title: '五机打印排产计划', file: 'CAD_PRINT_PLAN_5_MACHINES.md', repoPath: 'ROUND1_DEMO_CAD/PRINT_PLAN_5_MACHINES.md', branch: CAD, desc: 'L4 试件与正式零件的打印排产口径。', plain: '五台打印机如何分担这批零件的排产计划。' },
+  { id: 'assemblyrisk', title: '装配穿模风险简报（给组员）', file: 'ASSEMBLY_RISK_BRIEF.md', repoPath: 'docs/ASSEMBLY_RISK_BRIEF.md', branch: CAD, desc: '三层回答：几何自撞已排除 / 公差配合待试件冻结 / 停止规则兜底。', plain: '回答装配后会不会穿模：几何自撞已在 CAD 级排除；打印公差靠试件阶梯实测选定配合并回改复跑检查；失败被限制在试片/台架阶段。' },
   { id: 'cadguide', title: '装配指南', file: 'CAD_ASSEMBLY_GUIDE.md', repoPath: 'ROUND1_DEMO_CAD/ASSEMBLY_GUIDE.md', branch: CAD, desc: '各方案装配顺序与锁销位置。', plain: '零件打印出来后按什么顺序装配、锁销插在哪里。' },
 ]
 
