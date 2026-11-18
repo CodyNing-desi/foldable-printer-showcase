@@ -7,6 +7,7 @@ import { assetUrl } from '../state'
 import { CAM_DIRS, EXPLODE, JOINT_LABELS, PART_COLORS, PHASE_JOINTS, TRACE_POINTS, explodeWindow, partLabel } from '../data/viewer'
 import type { CamPreset } from '../data/viewer'
 import { MOTIONS, phaseIndex } from '../data/motion'
+import { interferenceAt } from '../data/replayInterference'
 
 interface Tracks { n: number; tracks: Record<string, { p: number[]; q: number[] }> }
 interface Joint { name: string; kind: string; a: string; b: string; pa: number[]; pb: number[]; axis: number[]; pin?: number; hole?: number }
@@ -65,9 +66,9 @@ function sample(tr: { p: number[]; q: number[] }, n: number, t: number, outP: TH
   outQ.copy(qa).slerp(qb, u)
 }
 
-function SceneContent({ cand, ctrl, meta, onSelect, controls, active, dragging }: {
+function SceneContent({ cand, ctrl, meta, onSelect, controls, active, dragging, hook }: {
   cand: string; ctrl: ViewerCtrl; meta: { tracks: Tracks; joints: Joint[]; manifest: Manifest; versions: VersionInfo[] }
-  onSelect: (pid: string | null) => void; controls: MutableRefObject<any>; active: boolean; dragging: MutableRefObject<boolean>
+  onSelect: (pid: string | null) => void; controls: MutableRefObject<any>; active: boolean; dragging: MutableRefObject<boolean>; hook: boolean
 }) {
   const gltf = useGLTF(assetUrl(`models/${cand}/assembly.glb`))
   // useGLTF 缓存共享同一 Object3D；primitive 挂载会抢占父节点 → 每实例必须克隆
@@ -149,6 +150,7 @@ function SceneContent({ cand, ctrl, meta, onSelect, controls, active, dragging }
   useFrame(() => {
     const c = ctrlRef.current
     const pIdx = phaseIndex(spec, c.t)
+    const interf = new Set(interferenceAt(cand, c.version, c.t).flatMap(r => r.pair.split('/')))
     const moving = new Set((phaseJoints[pIdx] ?? []).flatMap(n => meta.joints.filter(j => j.name === n).flatMap(j => [j.a, j.b])))
     for (const [pid, obj] of Object.entries(nodes)) {
       const tr = meta.tracks.tracks[pid]
@@ -176,16 +178,17 @@ function SceneContent({ cand, ctrl, meta, onSelect, controls, active, dragging }
       if (edge) {
         const em = edge.material as THREE.LineBasicMaterial
         edge.visible = !hidden && !(c.xray && !isSel && !moving.has(pid))
-        em.color.set(isSel ? '#e8503a' : moving.has(pid) ? '#2456e6' : '#3a3f47')
-        em.opacity = isSel || moving.has(pid) ? 0.85 : 0.45
+        em.color.set(isSel || interf.has(pid) ? '#e8503a' : moving.has(pid) ? '#2456e6' : '#3a3f47')
+        em.opacity = isSel || moving.has(pid) || interf.has(pid) ? 0.9 : 0.45
       }
       if (c.xray && !isSel && !moving.has(pid)) {
         mat.opacity = 0.13; mat.color.copy(COL_DIM); mat.depthWrite = false; mat.emissive.setRGB(0, 0, 0)
       } else {
         mat.opacity = 1; mat.depthWrite = true
-        mat.color.set(isSel ? '#e8503a' : base)
-        mat.emissive.copy(isSel ? COL_SEL : moving.has(pid) ? COL_MOVE : new THREE.Color(0, 0, 0))
-        mat.emissiveIntensity = isSel ? 0.22 : moving.has(pid) ? 0.16 : 0
+        const hit = interf.has(pid)
+        mat.color.set(isSel ? '#e8503a' : hit ? '#e8503a' : base)
+        mat.emissive.copy(isSel || hit ? COL_SEL : moving.has(pid) ? COL_MOVE : new THREE.Color(0, 0, 0))
+        mat.emissiveIntensity = isSel || hit ? 0.3 : moving.has(pid) ? 0.16 : 0
       }
     }
     activeJoints.forEach((j, i) => {
@@ -263,6 +266,13 @@ function SceneContent({ cand, ctrl, meta, onSelect, controls, active, dragging }
   // 离屏时 prop 变化仍补一帧
   useEffect(() => { if (!active) invalidate() }, [ctrl, active, invalidate])
 
+  // 审计钩子（仅 ?dbg3d）：暴露节点与轨道，供浏览器侧变换一致性校验
+  useEffect(() => {
+    if (hook && typeof location !== 'undefined' && location.search.includes('dbg3d')) {
+      ;(window as unknown as Record<string, unknown>).__mech = { cand, version: ctrl.version, nodes, tracks: meta.tracks.tracks, n: meta.tracks.n }
+    }
+  }, [cand, ctrl.version, nodes, meta, hook])
+
   return (
     <group>
       <primitive object={scene} onPointerDown={(e: { stopPropagation: () => void; object: THREE.Object3D }) => {
@@ -311,8 +321,8 @@ export function webglAvailable(): boolean {
   return webglProbe
 }
 
-export const MechanismViewer = memo(function MechanismViewer({ cand, ctrl, onSelect, onFallback, className, active = true }: {
-  cand: string; ctrl: ViewerCtrl; onSelect: (pid: string | null) => void; onFallback: () => void; className?: string; active?: boolean
+export const MechanismViewer = memo(function MechanismViewer({ cand, ctrl, onSelect, onFallback, className, active = true, hook = false }: {
+  cand: string; ctrl: ViewerCtrl; onSelect: (pid: string | null) => void; onFallback: () => void; className?: string; active?: boolean; hook?: boolean
 }) {
   const [meta, setMeta] = useState<{ tracks: Tracks; joints: Joint[]; manifest: Manifest; versions: VersionInfo[] } | null>(null)
   const [err, setErr] = useState(false)
@@ -346,7 +356,7 @@ export const MechanismViewer = memo(function MechanismViewer({ cand, ctrl, onSel
           <directionalLight position={[-220, 260, 160]} intensity={0.55} />
           <directionalLight position={[0, 320, -120]} intensity={0.3} />
           <Suspense fallback={null}>
-            <SceneContent cand={cand} ctrl={ctrl} meta={meta} onSelect={onSelect} controls={controls} active={active} dragging={dragging} />
+            <SceneContent cand={cand} ctrl={ctrl} meta={meta} onSelect={onSelect} controls={controls} active={active} dragging={dragging} hook={hook} />
           </Suspense>
           <OrbitControls ref={controls} makeDefault enableDamping dampingFactor={0.08} minDistance={30} maxDistance={2500} onStart={() => { dragging.current = true }} onEnd={() => { dragging.current = false }} />
         </Canvas>

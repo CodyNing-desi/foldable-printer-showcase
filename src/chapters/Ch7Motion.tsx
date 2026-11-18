@@ -82,7 +82,7 @@ export function Ch7Motion() {
             {fallback ? (
               <FramePlayer cand={motionTab} />
             ) : (
-              <MechanismViewer cand={motionTab} ctrl={viewerCtrl} onSelect={pid => setCtrl({ selectedPart: pid })} onFallback={() => setFallback(true)} className="viewer-fill" active={inView} />
+              <MechanismViewer cand={motionTab} ctrl={viewerCtrl} onSelect={pid => setCtrl({ selectedPart: pid })} onFallback={() => setFallback(true)} className="viewer-fill" active={inView} hook />
             )}
             {!fallback && (
               <div className="scene-caption">

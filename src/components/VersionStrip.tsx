@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { assetUrl, useCtrl } from '../state'
+import { interferenceAt } from '../data/replayInterference'
 import type { VersionInfo } from '../three/MechanismViewer'
 
 const cache: Record<string, VersionInfo[]> = {}
@@ -41,6 +42,20 @@ export function VersionStrip({ cand }: { cand: string }) {
           </button>
         ))}
       </div>
+      {(() => {
+        const hits = interferenceAt(cand, ctrl.version, ctrl.t)
+        if (!hits.length) return null
+        return (
+          <p className="vs-interf">
+            <b>版本回放实体干涉</b>：{hits.map(h => `${h.pair.replace('/', ' ↔ ')}（峰值 ${h.vol} mm³，t∈[${h.t0}, ${h.t1}]）`).join('；')}
+            <span className="meta" style={{ display: 'block' }}>
+              {hits[0].attribution === 'config_fail'
+                ? '归因：该版本配置本就干涉（其仿真未通过）——干涉正是它被淘汰/修改的原因，非网页映射错误，亦非 R1-V6 原始 CAD 缺陷。'
+                : '归因：该版本仿真通过，但回放使用 R1-V6 局部放大几何，与该版本仿真包络不同所致；非网页映射错误，亦非 R1-V6 原始 CAD 缺陷。'}
+            </span>
+          </p>
+        )
+      })()}
       {cur && (
         <p className="vs-readout">
           <b>{cur.label}</b>：{versionReadout(cur)}

@@ -182,6 +182,19 @@ await page.click('.seg button:has-text("V2 三维")')
 await page.waitForTimeout(900)
 check('候选页阶段联动版本', (await page.locator('#ch2 .vs-readout').textContent()).includes('V2 三维'))
 
+// 10c 穿模审计联动：历史回放干涉可见且不掩盖；冻结版无干涉提示
+await page.click('#ch7 .vs-btn:has-text("V1 名义")')
+await page.waitForTimeout(600)
+await page.locator('#ch7 input[aria-label="折叠进度"]').fill('0.95')
+await page.waitForTimeout(500)
+const interf = await page.locator('#ch7 .vs-interf').textContent()
+check('回放干涉提示含体积与归因', interf.includes('8736') && interf.includes('归因'))
+await page.click('#ch7 .vs-btn:has-text("V3.2.1 冻结")')
+await page.waitForTimeout(600)
+await page.locator('#ch7 input[aria-label="折叠进度"]').fill('0.95')
+await page.waitForTimeout(500)
+check('冻结版无干涉提示', await page.locator('#ch7 .vs-interf').count() === 0)
+
 // 11 字号层级审计
 const fonts = await page.evaluate(() => {
   const gs = sel => { const el = document.querySelector(sel); return el ? parseFloat(getComputedStyle(el).fontSize) : 0 }

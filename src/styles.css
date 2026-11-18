@@ -334,3 +334,5 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border-radius
 .vs-btn.on .vs-dot.bad { background: #ff9d8a; }
 .vs-readout { font-size: 20px; color: var(--muted); margin: 10px 0 0; }
 .vs-readout b { color: var(--ink); }
+.vs-interf { font-size: 18px; color: var(--red); border: 1.5px solid var(--red); border-radius: 10px; background: rgba(232,80,58,0.06); padding: 10px 16px; margin: 10px 0 0; }
+.vs-interf b { font-weight: 800; }
